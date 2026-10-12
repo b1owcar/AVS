@@ -1,0 +1,36 @@
+# Default non-secret settings for Local AI Vision Studio.
+# Override via environment variables (see .env.example).
+
+app:
+  name: Local AI Vision Studio
+  version: 0.1.0
+  run_mode: simulation  # simulation | real
+
+server:
+  host: 127.0.0.1
+  port: 18765
+
+paths:
+  data_dir: ./data
+  model_dir: ./data/models
+  output_dir: ./data/outputs
+  upload_dir: ./data/uploads
+  log_dir: ./data/logs
+  db_path: ./data/db/lavs.sqlite3
+
+comfyui:
+  url: http://127.0.0.1:8188
+  timeout_seconds: 5
+
+resources:
+  gpu_memory_reserve_mb: 512
+  max_concurrent_gpu_tasks: 1
+
+features:
+  # UI entries always visible; only verified features become available.
+  image_studio: entry_only
+  video_studio: entry_only
+  motion_studio: entry_only
+  studio_3d: entry_only
+  video_preprocess: planned
+  mock_inference: available

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+backend/tests/_tmp_data/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Local runtime data / secrets
+.env
+data/db/
+data/logs/
+data/outputs/
+data/uploads/
+data/models/**
+!data/models/.gitkeep
+!data/db/.gitkeep
+!data/logs/.gitkeep
+!data/outputs/.gitkeep
+!data/uploads/.gitkeep
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Agent tooling / uploads scratch
+agent-tools/
+uploads/
+
+# Keep env example only
+.env
+!.env.example
