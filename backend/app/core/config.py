@@ -43,6 +43,11 @@ class Settings(BaseSettings):
 
     # Isolated SDXL env python (venv Scripts/python.exe or bin/python)
     image_python: Path | None = None
+    # Optional warm SDXL HTTP worker (aligns with local start_sdxl_worker.ps1)
+    sdxl_worker_url: str | None = None
+
+    # Pose worker python (env-pose)
+    pose_python: Path | None = None
 
     # Office / real deploy: allow user-triggered weight downloads
     allow_model_download: bool = False
@@ -80,6 +85,7 @@ class Settings(BaseSettings):
         "comfyui_dir",
         "comfyui_output_dir",
         "image_python",
+        "pose_python",
         "install_root",
         mode="before",
     )
@@ -106,6 +112,7 @@ class Settings(BaseSettings):
         self.comfyui_dir = resolve(self.comfyui_dir)
         self.comfyui_output_dir = resolve(self.comfyui_output_dir)
         self.image_python = resolve(self.image_python)
+        self.pose_python = resolve(self.pose_python)
         self.install_root = resolve(self.install_root)
         return self
 

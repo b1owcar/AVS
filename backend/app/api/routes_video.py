@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import DbDep, SettingsDep
+from app.api.deps import DbDep, QueueDep, SettingsDep
 from app.db.models import AssetRecord
 from app.schemas.tasks import (
     ImageTo3DParams,
@@ -64,7 +64,11 @@ def _register_outputs(db: Session, paths: list[str], source_task: str) -> list[d
 
 @router.get("/video/status")
 def video_status(settings: SettingsDep) -> dict:
+    from app.adapters.wan_comfy_adapter import WanI2VAdapter, WanT2VAdapter
+
     svc = _video_service(settings)
+    t2v = WanT2VAdapter(settings).validate_environment()
+    i2v = WanI2VAdapter(settings).validate_environment()
     return {
         "ffmpeg_available": svc.available(),
         "upload_dir": str(settings.upload_dir),
@@ -76,10 +80,17 @@ def video_status(settings: SettingsDep) -> dict:
             "clip": svc.available(),
             "transcode": svc.available(),
             "preview": svc.available(),
-            "text_to_video": False,
-            "image_to_video": False,
+            "text_to_video": bool(t2v.get("ok")),
+            "image_to_video": bool(i2v.get("ok")),
         },
-        "notes": "Preprocess uses FFmpeg and does not require GPU. Generation models remain unavailable until installed.",
+        "wan": {
+            "t2v": t2v,
+            "i2v": i2v,
+        },
+        "notes": (
+            "Preprocess uses FFmpeg (no GPU). "
+            "T2V/I2V run via ComfyUI Wan workflows when ComfyUI is up and weights installed."
+        ),
     }
 
 
@@ -174,9 +185,74 @@ def validate_video_gen(body: VideoGenParams) -> dict:
         )
     if body.task_kind == "text_to_video" and not body.prompt.strip():
         raise HTTPException(status_code=400, detail="text_to_video requires prompt")
+    expected_model = (
+        "wan2.1-i2v" if body.task_kind == "image_to_video" else "wan2.1-t2v-1.3b"
+    )
     return {
         "ok": True,
         "validated": body.model_dump(),
+        "expected_model_id": expected_model,
         "execution": "not_started",
-        "message": "Parameters valid. Real Wan/Comfy execution not enabled until model installed.",
+        "message": "Parameters valid. Submit via POST /api/video/generate to enqueue.",
     }
+
+
+@router.post("/video/generate")
+def generate_video(body: VideoGenParams, db: DbDep, queue: QueueDep) -> dict:
+    """Enqueue Wan T2V or I2V via ComfyUI adapters (separate schemas)."""
+    if body.task_kind == "image_to_video":
+        if not body.reference_image_asset_id:
+            raise HTTPException(
+                status_code=400,
+                detail="image_to_video requires reference_image_asset_id",
+            )
+        model_id = "wan2.1-i2v"
+        if body.model_id and body.model_id not in {"wan2.1-t2v-1.3b", "wan2.1-i2v"}:
+            model_id = body.model_id
+        img_row = db.get(AssetRecord, body.reference_image_asset_id)
+        if img_row is None:
+            raise HTTPException(status_code=404, detail="reference image asset not found")
+        parameters = {
+            "prompt": body.prompt,
+            "negative_prompt": body.negative_prompt,
+            "width": body.width,
+            "height": body.height,
+            "num_frames": body.num_frames,
+            "fps": body.fps,
+            "seed": body.seed,
+            "input_image_path": img_row.file_path,
+            "reference_image_path": img_row.file_path,
+        }
+        task = queue.create_task(
+            db,
+            task_type="image_to_video",
+            model_id=model_id,
+            parameters=parameters,
+            input_files=[img_row.file_path],
+        )
+        return queue.serialize(task)
+
+    if not body.prompt.strip():
+        raise HTTPException(status_code=400, detail="text_to_video requires prompt")
+    model_id = body.model_id or "wan2.1-t2v-1.3b"
+    if model_id == "wan2.1-i2v":
+        raise HTTPException(
+            status_code=400,
+            detail="wan2.1-i2v is image_to_video only; use task_kind=image_to_video",
+        )
+    parameters = {
+        "prompt": body.prompt,
+        "negative_prompt": body.negative_prompt,
+        "width": body.width,
+        "height": body.height,
+        "num_frames": body.num_frames,
+        "fps": body.fps,
+        "seed": body.seed,
+    }
+    task = queue.create_task(
+        db,
+        task_type="text_to_video",
+        model_id=model_id,
+        parameters=parameters,
+    )
+    return queue.serialize(task)

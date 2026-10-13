@@ -62,13 +62,13 @@ def features() -> StudioCatalog:
                 id="video_studio",
                 label="Video Studio",
                 status="available",
-                notes="FFmpeg preprocess available. T2V/I2V generation still unavailable until Wan/Comfy installed.",
+                notes="FFmpeg preprocess + Wan T2V/I2V enqueue via ComfyUI when ready.",
             ),
             FeatureEntry(
                 id="motion_studio",
                 label="Motion Studio",
-                status="entry_only",
-                notes="Parameter schemas ready; pose/transfer models not wired.",
+                status="available",
+                notes="Phase 5 stage-1 pose extract (MediaPipe/env-pose). Motion transfer still Stage 2.",
             ),
             FeatureEntry(
                 id="studio_3d",

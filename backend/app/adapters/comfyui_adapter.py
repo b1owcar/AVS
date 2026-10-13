@@ -298,14 +298,15 @@ class ComfyUIAdapter(ModelAdapter):
         saved: list[str] = []
         outputs = history_entry.get("outputs") or {}
         for _node_id, node_out in outputs.items():
-            images = node_out.get("images") or []
-            for img in images:
+            media_lists = []
+            for key in ("images", "gifs", "videos"):
+                media_lists.extend(node_out.get(key) or [])
+            for img in media_lists:
                 filename = img.get("filename")
                 subfolder = img.get("subfolder") or ""
                 img_type = img.get("type") or "output"
                 if not filename:
                     continue
-                # Prefer viewing endpoint then copy locally if comfy output dir known
                 params = {"filename": filename, "subfolder": subfolder, "type": img_type}
                 view = client.get(f"{self.base_url}/view", params=params)
                 if view.status_code == 200:
@@ -314,13 +315,17 @@ class ComfyUIAdapter(ModelAdapter):
                     saved.append(str(target))
                     continue
                 if self.comfy_output_dir:
-                    src = self.comfy_output_dir / subfolder / filename if subfolder else self.comfy_output_dir / filename
+                    src = (
+                        self.comfy_output_dir / subfolder / filename
+                        if subfolder
+                        else self.comfy_output_dir / filename
+                    )
                     if src.exists():
                         target = dest_dir / filename
                         shutil.copy2(src, target)
                         saved.append(str(target))
         if not saved:
-            raise RuntimeError("ComfyUI finished but no output images were collected")
+            raise RuntimeError("ComfyUI finished but no output media were collected")
         return saved
 
 

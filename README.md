@@ -2,21 +2,19 @@
 
 本地 AI 视觉工作站（Windows 11 / Linux）：React Web UI + FastAPI + SQLite，混合推理架构（ComfyUI + Native + Specialized Worker）。
 
-**当前阶段：Remote Development Mode** — 可在本仓库完成代码、单元测试与模拟推理；真实 GPU 推理与模型下载推迟到目标电脑（RTX 5070 Ti Laptop，32GB RAM）。
+## 进度（§11 产品阶段）
 
-## 已实现（Phase 0–1）
+| Phase | 内容 | 状态 |
+|-------|------|------|
+| 0 | 设计 | 完成 |
+| 1 | 基础前后端 / Mock | 完成 |
+| 2 | ComfyUI + SDXL（含 warm worker） | 代码完成；本机 GPU 验证在办公室 |
+| 3 | 视频预处理框架 | 完成（FFmpeg） |
+| 4 | Wan T2V + **I2V** | 代码完成；需 ComfyUI + 权重 |
+| 5 | 姿态提取阶段一 | 代码完成；需 `install-pose.ps1` |
+| — | SAST | 见 `docs/SAST_REPORT.md` |
 
-- Phase 0 设计报告：`docs/PHASE0_DESIGN.md`
-- FastAPI：健康检查、系统探测（可降级）、模型注册表、任务队列、素材库、ComfyUI 连通性探测
-- Mock 图像适配器（**Demo / Simulation Mode**，非真实推理）
-- React + Vite 深色工作站 UI（全部 Studio 入口；未验证功能明确标注）
-- Windows / Linux 安装与启动脚本、诊断脚本、部署清单
-
-## 未实现 / 未验证
-
-- SDXL / Wan / SAM2 / TRELLIS 真实推理：**PENDING TARGET HARDWARE**
-- ComfyUI 工作流提交：仅连接探测骨架
-- 视频抽帧、姿态、动作迁移、三维生成：入口 only
+Cloud / 远程环境**不能**写入 `D:\avs`；用更新脚本同步到办公室 PC。
 
 ## 办公室 Windows 部署（`D:\avs`）
 
@@ -24,44 +22,37 @@
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\windows\deploy-to-d-avs.ps1 -InstallRoot "D:\avs"
-```
-
-部署后按用户要求 **跳过硬件验证**。启动：`scripts\windows\start.ps1`。
-
-### Phase 2：ComfyUI + SDXL
-
-见 `docs/PHASE2_COMFYUI_SDXL.md`。
-
-```powershell
-cd D:\avs
-powershell -ExecutionPolicy Bypass -File .\scripts\windows\install-phase2.ps1 -DownloadWeights
-```
-
-### Phase 3：视频预处理框架
-
-见 `docs/PHASE3_VIDEO_FRAMEWORK.md`。Video Studio 已支持 FFmpeg 抽帧/裁剪（无需 GPU）。更新本机代码：
-
-```powershell
+# 或增量更新：
 powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\update-avs.ps1 -SourceDir "<fresh-checkout>"
+```
+
+### 常用启动
+
+```powershell
+# ComfyUI（Wan / SDXL Comfy 路径）
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start_comfyui.ps1
+
+# 可选 SDXL warm worker
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start_sdxl_worker.ps1
+
+# Pose env（Phase 5）
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\install-pose.ps1
+
+# LAVS UI + API
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start.ps1
 ```
 
 ## 快速启动（开发机 / Linux）
 
 ```bash
-# Linux
 chmod +x scripts/linux/*.sh scripts/diagnose/*.sh
 ./scripts/linux/setup.sh
 ./scripts/linux/start.sh
 ```
 
-默认：
+默认 API：http://127.0.0.1:18765 · UI：http://127.0.0.1:18766
 
-- API：http://127.0.0.1:18765  
-- UI：http://127.0.0.1:18766  
-
-复制 `.env.example` → `.env` 按需修改。默认只监听 localhost。
-
-### 仅跑后端测试
+### 测试
 
 ```bash
 source .venv/bin/activate
@@ -69,11 +60,15 @@ export PYTHONPATH=backend
 pytest backend/tests -q
 ```
 
+## 文档
+
+- `docs/PHASE0_DESIGN.md` · `docs/PHASE2_COMFYUI_SDXL.md` · `docs/PHASE3_VIDEO_FRAMEWORK.md`
+- `docs/PHASE4_WAN_ALIGN.md` · `docs/PHASE5_POSE.md` · `docs/SAST_REPORT.md`
+- `docs/MODEL_INSTALL.md` · `docs/TROUBLESHOOTING.md`
+
 ## 原则
 
 1. UI 有入口 ≠ 功能可用  
 2. 禁止用假进度冒充真实推理  
 3. 不在远程开发阶段自动下载大型权重  
-4. 32GB 是系统内存，不是显存  
-
-更多：`docs/DEPLOYMENT_CHECKLIST.md`、`docs/MODEL_INSTALL.md`、`docs/TROUBLESHOOTING.md`
+4. T2V / I2V 参数与模型严格分离  

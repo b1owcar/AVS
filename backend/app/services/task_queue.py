@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 
 from app.adapters.base import ModelAdapter
 from app.adapters.comfyui_adapter import ComfySdxlAdapter, ComfyUIAdapter
-from app.adapters.mock_adapter import MockImageAdapter, UnimplementedNativeAdapter
+from app.adapters.mock_adapter import MockImageAdapter
+from app.adapters.pose_adapter import PoseMediapipeAdapter
 from app.adapters.sdxl_adapter import SdxlNativeAdapter
+from app.adapters.wan_comfy_adapter import WanI2VAdapter, WanT2VAdapter
 from app.core.config import Settings
 from app.db.models import AssetRecord, TaskRecord
 from app.db.session import session_factory
@@ -22,6 +24,13 @@ logger = logging.getLogger(__name__)
 
 TERMINAL = {"completed", "failed", "cancelled"}
 ACTIVE = {"pending", "preparing", "running", "cancelling"}
+CANCEL_MODELS = {
+    "mock-demo",
+    "sdxl-comfyui",
+    "comfyui-bridge",
+    "wan2.1-t2v-1.3b",
+    "wan2.1-i2v",
+}
 
 
 def _utcnow() -> datetime:
@@ -44,11 +53,9 @@ class TaskQueueService:
                 default_checkpoint=settings.comfyui_checkpoint,
                 comfy_output_dir=settings.comfyui_output_dir,
             ),
-            "wan2.1-t2v-1.3b": UnimplementedNativeAdapter(
-                "wan2.1-t2v-1.3b",
-                "Wan 2.1 T2V 1.3B",
-                ["text_to_video"],
-            ),
+            "wan2.1-t2v-1.3b": WanT2VAdapter(settings),
+            "wan2.1-i2v": WanI2VAdapter(settings),
+            "pose-mediapipe": PoseMediapipeAdapter(settings),
             "comfyui-bridge": ComfyUIAdapter(
                 settings.comfyui_url,
                 settings.comfyui_timeout_seconds,
@@ -82,7 +89,7 @@ class TaskQueueService:
     ) -> TaskRecord:
         adapter = self._adapters.get(model_id)
         is_simulation = model_id == "mock-demo"
-        cancellation = model_id in {"mock-demo", "sdxl-comfyui", "comfyui-bridge"}
+        cancellation = model_id in CANCEL_MODELS
 
         task = TaskRecord(
             id=str(uuid.uuid4()),
@@ -181,8 +188,6 @@ class TaskQueueService:
             self._stop.wait(0.4)
 
     def _adapter_ready(self, adapter: ModelAdapter) -> tuple[bool, str]:
-        if isinstance(adapter, UnimplementedNativeAdapter):
-            return False, "adapter unimplemented"
         if isinstance(adapter, MockImageAdapter):
             return True, "mock"
         try:

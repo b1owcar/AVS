@@ -49,10 +49,10 @@ class VideoPreprocessParams(BaseModel):
 class PoseExtractParams(BaseModel):
     reference_video_asset_id: str
     person_id: int | None = None
-    model_id: str = "dwpose"
+    model_id: str = "pose-mediapipe"
     export_skeleton_preview: bool = True
     coordinate_system: Literal["image_pixel", "normalized"] = "image_pixel"
-    notes: str = "Pose extract ≠ full motion transfer. Stage 1 framework only."
+    notes: str = "Pose extract ≠ full motion transfer. Phase 5 stage-1 via env-pose/MediaPipe."
 
 
 class MotionTransferParams(BaseModel):

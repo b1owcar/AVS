@@ -5,7 +5,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_assets, routes_models, routes_system, routes_tasks, routes_video
+from app.api import (
+    routes_assets,
+    routes_models,
+    routes_motion,
+    routes_system,
+    routes_tasks,
+    routes_video,
+)
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.db.session import init_db, session_factory
@@ -57,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_tasks.router, prefix="/api")
     app.include_router(routes_assets.router, prefix="/api")
     app.include_router(routes_video.router, prefix="/api")
+    app.include_router(routes_motion.router, prefix="/api")
     return app
 
 

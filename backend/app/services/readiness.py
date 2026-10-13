@@ -6,7 +6,9 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.adapters.comfyui_adapter import ComfyUIAdapter
+from app.adapters.pose_adapter import PoseMediapipeAdapter
 from app.adapters.sdxl_adapter import SdxlNativeAdapter
+from app.adapters.wan_comfy_adapter import WanI2VAdapter, WanT2VAdapter
 from app.core.config import Settings
 from app.db.models import ModelRecord
 
@@ -24,7 +26,8 @@ def refresh_model_availability(db: Session, settings: Settings) -> dict[str, Any
             row.download_status = "downloaded"
             row.availability = "available"
             row.verification_status = "installed_unverified"
-            row.notes = "Native Diffusers path ready (weights + env-image present)."
+            mode = sdxl_env.get("mode") or "subprocess"
+            row.notes = f"Native Diffusers path ready (mode={mode})."
         elif (settings.model_dir / "sdxl-base-1.0").exists():
             row.download_status = "downloaded"
             row.environment_status = "partial"
@@ -79,6 +82,44 @@ def refresh_model_availability(db: Session, settings: Settings) -> dict[str, Any
             "health": comfy_health,
         }
 
+    # Wan T2V / I2V — ready when ComfyUI is reachable (weights verified at workflow runtime)
+    for wan_cls in (WanT2VAdapter, WanI2VAdapter):
+        wan = wan_cls(settings)
+        wan_env = wan.validate_environment()
+        wrow = db.get(ModelRecord, wan.model_id)
+        if wrow is None:
+            continue
+        if wan_env.get("ok"):
+            wrow.environment_status = "ready"
+            wrow.availability = "available_conditional"
+            wrow.verification_status = "installed_unverified"
+            wrow.notes = (
+                f"ComfyUI reachable; workflow={wan.workflow_file}. "
+                "Weights must exist in ComfyUI model folders."
+            )
+        else:
+            wrow.environment_status = "not_running"
+            wrow.availability = "unavailable"
+            wrow.verification_status = "unverified"
+            wrow.notes = str(wan_env.get("message"))
+        report[wan.model_id] = {"availability": wrow.availability, "env": wan_env}
+
+    pose = PoseMediapipeAdapter(settings)
+    pose_env = pose.validate_environment()
+    prow = db.get(ModelRecord, "pose-mediapipe")
+    if prow is not None:
+        if pose_env.get("ok"):
+            prow.environment_status = "ready"
+            prow.availability = "available"
+            prow.verification_status = "installed_unverified"
+            prow.notes = "env-pose MediaPipe worker ready (Phase 5 stage-1)."
+        else:
+            prow.environment_status = "not_installed"
+            prow.availability = "unavailable"
+            prow.verification_status = "unverified"
+            prow.notes = "; ".join(pose_env.get("issues") or [])
+        report["pose-mediapipe"] = {"availability": prow.availability, "env": pose_env}
+
     mock = db.get(ModelRecord, "mock-demo")
     if mock is not None:
         mock.availability = "available_simulation"
@@ -97,6 +138,9 @@ def install_hints(settings: Settings) -> dict[str, Any]:
             "phase2": "scripts/windows/install-phase2.ps1",
             "comfyui": "scripts/windows/install-comfyui.ps1",
             "sdxl": "scripts/windows/install-sdxl.ps1",
+            "pose": "scripts/windows/install-pose.ps1",
+            "start_comfyui": "scripts/windows/start_comfyui.ps1",
+            "start_sdxl_worker": "scripts/windows/start_sdxl_worker.ps1",
         },
         "allow_model_download": settings.allow_model_download,
         "run_mode": settings.run_mode,

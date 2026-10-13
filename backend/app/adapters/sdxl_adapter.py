@@ -7,12 +7,17 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 from app.adapters.base import AdapterStatus, ModelAdapter, ResourceEstimate
 from app.core.config import Settings
 
 
 class SdxlNativeAdapter(ModelAdapter):
-    """Native SDXL via isolated env-image Python subprocess."""
+    """Native SDXL via warm HTTP worker (preferred) or env-image subprocess.
+
+    Local office naming alias: SDXLDiffusersAdapter.
+    """
 
     model_id = "sdxl-base-1.0"
     display_name = "Stable Diffusion XL Base 1.0"
@@ -71,12 +76,33 @@ class SdxlNativeAdapter(ModelAdapter):
         # repo_root/envs/image/worker_txt2img.py
         return Path(__file__).resolve().parents[3] / "envs" / "image" / "worker_txt2img.py"
 
+    def _warm_worker_ok(self) -> bool:
+        url = self.settings.sdxl_worker_url
+        if not url:
+            return False
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get(f"{url.rstrip('/')}/health")
+                return resp.status_code == 200 and bool(resp.json().get("ok"))
+        except Exception:  # noqa: BLE001
+            return False
+
     def validate_environment(self) -> dict[str, Any]:
+        if self._warm_worker_ok():
+            return {
+                "ok": True,
+                "mode": "warm_worker",
+                "sdxl_worker_url": self.settings.sdxl_worker_url,
+                "model_path": str(self.model_path),
+                "issues": [],
+                "implementation_status": "available",
+            }
         py = self.image_python
         issues: list[str] = []
         if py is None or not py.exists():
             issues.append(
-                "LAVS_IMAGE_PYTHON not set or missing. Run scripts/windows/install-sdxl.ps1"
+                "LAVS_IMAGE_PYTHON not set or missing. Run scripts/windows/install-sdxl.ps1 "
+                "or start_sdxl_worker.ps1"
             )
         if not self.model_path.exists():
             issues.append(
@@ -87,6 +113,7 @@ class SdxlNativeAdapter(ModelAdapter):
         ok = not issues
         return {
             "ok": ok,
+            "mode": "subprocess",
             "model_path": str(self.model_path),
             "image_python": str(py) if py else None,
             "worker_script": str(self.worker_script),
@@ -153,6 +180,38 @@ class SdxlNativeAdapter(ModelAdapter):
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"sdxl_{uuid.uuid4().hex[:10]}.png"
 
+        # Prefer warm worker (local office optimization path)
+        if env.get("mode") == "warm_worker" and self.settings.sdxl_worker_url:
+            if progress_cb:
+                progress_cb(0.1, "sdxl warm worker request")
+            body = {
+                **validated,
+                "model_path": str(self.model_path),
+                "output_path": str(out_path),
+            }
+            with httpx.Client(timeout=600.0) as client:
+                resp = client.post(
+                    f"{self.settings.sdxl_worker_url.rstrip('/')}/txt2img",
+                    json=body,
+                )
+            if resp.status_code != 200:
+                raise RuntimeError(f"warm worker HTTP {resp.status_code}: {resp.text[:400]}")
+            data = resp.json()
+            if not data.get("ok"):
+                raise RuntimeError(data.get("message") or data.get("error") or "warm worker failed")
+            if progress_cb:
+                progress_cb(1.0, "sdxl warm completed")
+            return {
+                "output_files": data.get("output_files", [str(out_path)]),
+                "is_simulation": False,
+                "message": data.get("message", "SDXL warm worker completed"),
+                "meta": {
+                    "device": data.get("device"),
+                    "vram_peak_mb": data.get("vram_peak_mb"),
+                    "mode": "warm_worker",
+                },
+            }
+
         work = out_dir / "_worker"
         work.mkdir(parents=True, exist_ok=True)
         req_path = work / "request.json"
@@ -177,7 +236,6 @@ class SdxlNativeAdapter(ModelAdapter):
             text=True,
         )
 
-        # Poll until done; report coarse progress
         while proc.poll() is None:
             if progress_cb:
                 progress_cb(0.4, "sdxl worker running")
@@ -200,5 +258,10 @@ class SdxlNativeAdapter(ModelAdapter):
             "meta": {
                 "device": resp.get("device"),
                 "vram_peak_mb": resp.get("vram_peak_mb"),
+                "mode": "subprocess",
             },
         }
+
+
+# Alias used by local office agent transcript
+SDXLDiffusersAdapter = SdxlNativeAdapter
