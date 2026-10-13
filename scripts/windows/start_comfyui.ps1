@@ -14,7 +14,9 @@ $ErrorActionPreference = "Stop"
 $candidates = @(
   (Join-Path $InstallRoot "engines\ComfyUI"),
   (Join-Path $InstallRoot "ComfyUI"),
-  (Join-Path $InstallRoot "engines\ComfyUI_windows_portable\ComfyUI")
+  (Join-Path $InstallRoot "engines\ComfyUI_windows_portable\ComfyUI"),
+  (Join-Path $InstallRoot "external\ComfyUI_windows_portable\ComfyUI"),
+  (Join-Path $InstallRoot "external\ComfyUI")
 )
 
 $ComfyDir = $null
@@ -29,10 +31,16 @@ Write-Host "Starting ComfyUI from $ComfyDir on http://${Listen}:${Port}"
 
 $py = Join-Path $ComfyDir ".venv\Scripts\python.exe"
 if (-not (Test-Path $py)) {
-  $portablePy = Join-Path $InstallRoot "engines\ComfyUI_windows_portable\python_embeded\python.exe"
-  if (Test-Path $portablePy) {
-    $py = $portablePy
-  } else {
+  $portableCandidates = @(
+    (Join-Path $InstallRoot "engines\ComfyUI_windows_portable\python_embeded\python.exe"),
+    (Join-Path $InstallRoot "external\ComfyUI_windows_portable\python_embeded\python.exe"),
+    (Join-Path (Split-Path $ComfyDir -Parent) "python_embeded\python.exe")
+  )
+  $py = $null
+  foreach ($p in $portableCandidates) {
+    if (Test-Path $p) { $py = $p; break }
+  }
+  if (-not $py) {
     throw "ComfyUI python not found (.venv or portable python_embeded)"
   }
 }

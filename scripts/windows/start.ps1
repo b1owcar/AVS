@@ -2,6 +2,9 @@ $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $Root
 
+Write-Host "Tip: prefer scripts\windows\start-all.ps1 to also launch ComfyUI."
+Write-Host "After update-avs.ps1, stop this process and start again — browser refresh does not reload the API."
+
 if (-not (Test-Path .venv)) {
   throw ".venv missing. Run scripts\windows\setup.ps1 first."
 }

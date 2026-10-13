@@ -32,6 +32,7 @@ export function DashboardPage() {
   }, [])
 
   const gpu = (info?.gpu as Record<string, unknown> | undefined) ?? {}
+  const runMode = String(info?.run_mode ?? 'unknown')
 
   return (
     <>
@@ -39,18 +40,29 @@ export function DashboardPage() {
         <div>
           <h1 className="page-title">Dashboard</h1>
           <p className="page-desc">
-            Hardware probe and feature gates for this development session. Values here describe the
-            current machine — not the target RTX 5070 Ti laptop until deployment-day checks run.
+            Hardware probe and feature gates for this machine. After syncing code with
+            update-avs.ps1, restart via start-all.ps1 — browser refresh alone does not reload the
+            API process.
           </p>
         </div>
       </div>
 
       {error && <p className="error-text">{error}</p>}
 
-      <div className="callout">
-        Remote Development Mode is active. Mock inference may run; real CUDA model downloads and
-        GPU inference wait for the target PC.
-      </div>
+      {runMode === 'simulation' ? (
+        <div className="callout">
+          <strong>Demo / Simulation Mode</strong> (<code>LAVS_RUN_MODE=simulation</code>). Mock
+          inference works; real SDXL/Wan need office install + ComfyUI. Models marked unavailable
+          are not “unimplemented UI” — their adapters are wired but not ready until env/weights
+          exist.
+        </div>
+      ) : (
+        <div className="callout info">
+          Run mode: <strong>{runMode}</strong>. Feature entries that still show unavailable mean
+          the worker/ComfyUI/weights are not ready on this PC — restart after install, then reopen
+          ComfyUI with <code>scripts\windows\start-all.ps1</code>.
+        </div>
+      )}
 
       <div className="grid-2" style={{ marginTop: '1rem' }}>
         <section className="panel">

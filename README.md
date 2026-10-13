@@ -31,18 +31,15 @@ powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\update-avs.ps1 -
 ### 常用启动
 
 ```powershell
-# ComfyUI（Wan / SDXL Comfy 路径）
-powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start_comfyui.ps1
-
-# 可选 SDXL warm worker
-powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start_sdxl_worker.ps1
-
-# Pose env（Phase 5）
-powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\install-pose.ps1
-
-# LAVS UI + API
-powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start.ps1
+# 一键：ComfyUI + 后端 + 前端（推荐）
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start-all.ps1
+# 可选热 SDXL worker：
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start-all.ps1 -WithSdxlWorker
 ```
+
+浏览器刷新**不会**重载 Python。`update-avs.ps1` 同步代码后请关掉旧窗口再跑 `start-all.ps1`。
+
+Model Manager 里 `unavailable` = 环境/权重未就绪（适配器已接线），不是“功能未实现”。
 
 ## 快速启动（开发机 / Linux）
 

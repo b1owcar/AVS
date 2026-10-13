@@ -44,6 +44,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\start.ps1
 
 默认 `LAVS_RUN_MODE=simulation`（Mock 可用）。真实 SDXL/Wan 等仍需你之后主动装依赖并下载权重；本步骤不下载模型。
 
+## 日常启动（ComfyUI + 前后端）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start-all.ps1
+```
+
+同步新代码后必须**重启**该脚本（或分别重启 API/UI）。仅刷新浏览器不够。
+
 ## 下一步：ComfyUI / SDXL（Phase 2/3）
 
 见 **[PHASE2_COMFYUI_SDXL.md](./PHASE2_COMFYUI_SDXL.md)**：
