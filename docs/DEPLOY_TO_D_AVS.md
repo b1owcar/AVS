@@ -44,20 +44,36 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\start.ps1
 
 默认 `LAVS_RUN_MODE=simulation`（Mock 可用）。真实 SDXL/Wan 等仍需你之后主动装依赖并下载权重；本步骤不下载模型。
 
-## 云端进度部署到本机（推荐）
+## 云端进度部署到本机
 
-Cloud Agent **不能直接写** `D:\avs`。请下载同步包后在办公室执行：
+Cloud Agent **不能直接写** `D:\avs`。
 
-1. 下载 `lavs-cloud-sync-latest.zip`（agent 产物 / store media）
-2. 解压到 `C:\Temp\lavs-fresh`（目录内应有 `APPLY-TO-D-AVS.ps1`、`backend\`、`frontend\`）
-3. 本机 PowerShell：
+### 推荐：Git（zip 下载失败时用这个）
+
+1. 在 Cursor 点 **Create repo**，复制得到的 HTTPS 地址  
+2. 本机已装 Git 后：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\APPLY-TO-D-AVS.ps1
+git --version
+$Url = "https://github.com/<you>/<your-repo>.git"   # 换成 Create repo 后的地址
+git clone --branch main --single-branch $Url C:\Temp\lavs-fresh
+powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\scripts\windows\git-sync-to-avs.ps1 -GitUrl $Url
 powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start-all.ps1
 ```
 
-会保留 `data` / `engines` / `external` / `.venv`，并强制写入 `scripts\windows\*`。
+之后更新：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\scripts\windows\git-sync-to-avs.ps1 -SourceDir C:\Temp\lavs-fresh -GitPull
+```
+
+### 备选：zip 同步包
+
+1. 下载 `lavs-cloud-sync-latest.zip`
+2. 解压到 `C:\Temp\lavs-fresh`
+3. `APPLY-TO-D-AVS.ps1` → 再 `start-all.ps1`
+
+两种方式都会保留 `data` / `engines` / `external` / `.venv`。
 
 ## 云端改完 ≠ 自动进 D:\avs
 
