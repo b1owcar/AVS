@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { api } from '../api'
+import { api, type FeatureEntry, type FeatureSummary } from '../api'
 import { StatusBadge } from '../components/StatusBadge'
 
 export function DashboardPage() {
   const [info, setInfo] = useState<Record<string, unknown> | null>(null)
-  const [features, setFeatures] = useState<Array<Record<string, string>>>([])
+  const [features, setFeatures] = useState<FeatureEntry[]>([])
+  const [summary, setSummary] = useState<FeatureSummary | null>(null)
   const [comfy, setComfy] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +20,8 @@ export function DashboardPage() {
         ])
         if (!alive) return
         setInfo(sys)
-        setFeatures(feat.features as unknown as Array<Record<string, string>>)
+        setFeatures(feat.features)
+        setSummary(feat.summary ?? null)
         setComfy(c)
       } catch (e) {
         if (!alive) return
@@ -32,37 +34,73 @@ export function DashboardPage() {
   }, [])
 
   const gpu = (info?.gpu as Record<string, unknown> | undefined) ?? {}
-  const runMode = String(info?.run_mode ?? 'unknown')
+  const runMode = summary?.run_mode ?? String(info?.run_mode ?? 'unknown')
+  const comfyLabel =
+    summary?.comfyui ?? (comfy?.reachable ? 'reachable' : comfy ? 'offline' : '…')
 
   return (
     <>
       <div className="topbar">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-desc">
-            Hardware probe and feature gates for this machine. After syncing code with
-            update-avs.ps1, restart via start-all.ps1 — browser refresh alone does not reload the
-            API process.
-          </p>
+          <p className="page-desc">Live readiness for this PC — adapters, ComfyUI, and workers.</p>
         </div>
       </div>
 
       {error && <p className="error-text">{error}</p>}
 
-      {runMode === 'simulation' ? (
-        <div className="callout">
-          <strong>Demo / Simulation Mode</strong> (<code>LAVS_RUN_MODE=simulation</code>). Mock
-          inference works; real SDXL/Wan need office install + ComfyUI. Models marked unavailable
-          are not “unimplemented UI” — their adapters are wired but not ready until env/weights
-          exist.
+      <section className="panel readiness-bar">
+        <div className="readiness-stats">
+          <div className="stat">
+            <div className="label">Mode</div>
+            <div className="value">{runMode}</div>
+          </div>
+          <div className="stat">
+            <div className="label">Ready</div>
+            <div className="value ok-text">{summary?.ready_count ?? '—'}</div>
+          </div>
+          <div className="stat">
+            <div className="label">Blocked</div>
+            <div className={`value ${summary && summary.blocked_count > 0 ? 'warn-text' : ''}`}>
+              {summary?.blocked_count ?? '—'}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="label">ComfyUI</div>
+            <div className={`value ${comfyLabel === 'reachable' ? 'ok-text' : 'warn-text'}`}>
+              {comfyLabel}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="label">SDXL native</div>
+            <div
+              className={`value ${summary?.sdxl_native === 'ready' ? 'ok-text' : 'muted'}`}
+            >
+              {summary?.sdxl_native ?? '—'}
+            </div>
+          </div>
+          <div className="stat">
+            <div className="label">FFmpeg</div>
+            <div className={`value ${summary?.ffmpeg === 'available' ? 'ok-text' : 'warn-text'}`}>
+              {summary?.ffmpeg ?? '—'}
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="callout info">
-          Run mode: <strong>{runMode}</strong>. Feature entries that still show unavailable mean
-          the worker/ComfyUI/weights are not ready on this PC — restart after install, then reopen
-          ComfyUI with <code>scripts\windows\start-all.ps1</code>.
-        </div>
-      )}
+        {summary?.next_steps && summary.next_steps.length > 0 ? (
+          <div className="next-steps">
+            <div className="label">Next steps</div>
+            <ol>
+              {summary.next_steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        ) : (
+          <p className="muted" style={{ margin: '0.75rem 0 0' }}>
+            Core paths look ready. Open a studio to run a task.
+          </p>
+        )}
+      </section>
 
       <div className="grid-2" style={{ marginTop: '1rem' }}>
         <section className="panel">
@@ -143,13 +181,19 @@ export function DashboardPage() {
             </div>
           </div>
           <p className="muted" style={{ marginTop: '0.85rem' }}>
-            {String(comfy?.message ?? '')}
+            {String(comfy?.message ?? summary?.comfyui_message ?? '')}
           </p>
         </section>
       </div>
 
       <section className="panel">
-        <h2>Feature gates</h2>
+        <h2>Feature readiness</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          <StatusBadge status="available" /> wired and ready ·{' '}
+          <StatusBadge status="available_conditional" /> ready, weights checked at run ·{' '}
+          <StatusBadge status="available_simulation" /> demo mock ·{' '}
+          <StatusBadge status="unavailable" /> blocked on this PC
+        </p>
         <table className="table">
           <thead>
             <tr>
@@ -159,15 +203,23 @@ export function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {features.map((f) => (
-              <tr key={f.id}>
-                <td>{f.label}</td>
-                <td>
-                  <StatusBadge status={f.status} />
+            {features.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="muted">
+                  Loading…
                 </td>
-                <td className="muted">{f.notes}</td>
               </tr>
-            ))}
+            ) : (
+              features.map((f) => (
+                <tr key={f.id}>
+                  <td>{f.label}</td>
+                  <td>
+                    <StatusBadge status={f.status} />
+                  </td>
+                  <td className="muted">{f.notes}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </section>

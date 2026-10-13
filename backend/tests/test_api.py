@@ -20,6 +20,23 @@ def test_system_info_degraded_ok(client):
     assert data["run_mode"] == "simulation"
 
 
+def test_features_live_summary(client):
+    resp = client.get("/api/features")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "features" in data
+    assert "summary" in data
+    summary = data["summary"]
+    assert summary["run_mode"] == "simulation"
+    assert summary["comfyui"] in {"reachable", "offline"}
+    assert isinstance(summary["next_steps"], list)
+    by_id = {f["id"]: f for f in data["features"]}
+    assert by_id["dashboard"]["status"] == "available"
+    # Without SDXL/Comfy in CI, Image Studio stays in demo mode
+    assert by_id["image_studio"]["status"] == "available_simulation"
+    assert "Demo" in by_id["image_studio"]["notes"] or "mock" in by_id["image_studio"]["notes"].lower()
+
+
 def test_model_registry_seeded(client):
     resp = client.get("/api/models")
     assert resp.status_code == 200

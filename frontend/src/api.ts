@@ -1,5 +1,6 @@
 export type FeatureStatus =
   | 'available'
+  | 'available_conditional'
   | 'available_simulation'
   | 'entry_only'
   | 'unimplemented'
@@ -10,6 +11,17 @@ export interface FeatureEntry {
   label: string
   status: FeatureStatus
   notes: string
+}
+
+export interface FeatureSummary {
+  run_mode: string
+  ready_count: number
+  blocked_count: number
+  comfyui: 'reachable' | 'offline'
+  comfyui_message?: string
+  sdxl_native?: 'ready' | 'not_ready'
+  ffmpeg?: 'available' | 'missing'
+  next_steps?: string[]
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -24,7 +36,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<{ ok: boolean; run_mode: string; version: string }>('/api/health'),
   systemInfo: () => request<Record<string, unknown>>('/api/system/info'),
-  features: () => request<{ features: FeatureEntry[] }>('/api/features'),
+  features: () =>
+    request<{ features: FeatureEntry[]; summary?: FeatureSummary }>('/api/features'),
   models: () => request<{ models: Array<Record<string, unknown>> }>('/api/models'),
   tasks: () => request<{ tasks: Array<Record<string, unknown>> }>('/api/tasks'),
   createTask: (body: {

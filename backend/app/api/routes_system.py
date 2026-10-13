@@ -5,7 +5,8 @@ from fastapi import APIRouter
 from app.adapters.comfyui_adapter import ComfyUIAdapter
 from app.api.deps import SettingsDep
 from app.core.hardware import collect_system_info
-from app.schemas.api import FeatureEntry, StudioCatalog
+from app.schemas.api import StudioCatalog
+from app.services.feature_catalog import build_feature_catalog
 
 router = APIRouter(tags=["system"])
 
@@ -43,65 +44,8 @@ def system_info(settings: SettingsDep) -> dict:
 
 
 @router.get("/features", response_model=StudioCatalog)
-def features() -> StudioCatalog:
-    return StudioCatalog(
-        features=[
-            FeatureEntry(
-                id="dashboard",
-                label="Dashboard",
-                status="available",
-                notes="System overview and status",
-            ),
-            FeatureEntry(
-                id="image_studio",
-                label="Image Studio",
-                status="available_simulation",
-                notes="Mock always available. SDXL native / ComfyUI become available after install-phase2.ps1.",
-            ),
-            FeatureEntry(
-                id="video_studio",
-                label="Video Studio",
-                status="available",
-                notes="FFmpeg preprocess + Wan T2V/I2V enqueue via ComfyUI when ready.",
-            ),
-            FeatureEntry(
-                id="motion_studio",
-                label="Motion Studio",
-                status="available",
-                notes="Phase 5: pose extract + transfer adapter (needs env-motion/weights) + skeleton compose helper.",
-            ),
-            FeatureEntry(
-                id="studio_3d",
-                label="3D Studio",
-                status="available",
-                notes="Phase 6: TRELLIS image-to-3d (env-trellis) + video keyframe_approx (not full geometry).",
-            ),
-            FeatureEntry(
-                id="model_manager",
-                label="Model Manager",
-                status="available",
-                notes="Registry + download metadata; no auto download.",
-            ),
-            FeatureEntry(
-                id="task_queue",
-                label="Task Queue",
-                status="available",
-                notes="Persisted queue with simulation/real separation.",
-            ),
-            FeatureEntry(
-                id="asset_library",
-                label="Asset Library",
-                status="available",
-                notes="Upload / list / delete with path safety.",
-            ),
-            FeatureEntry(
-                id="settings",
-                label="Settings",
-                status="available",
-                notes="Read-only view of effective config in Phase 1.",
-            ),
-        ]
-    )
+def features(settings: SettingsDep) -> StudioCatalog:
+    return build_feature_catalog(settings)
 
 
 @router.get("/comfyui/status")
