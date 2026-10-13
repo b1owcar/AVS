@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Pull latest LAVS code into D:\avs without wiping data/engines/venvs.
@@ -55,7 +55,7 @@ $InstallRoot is not a git checkout (no .git). Options:
 if ($GitUrl -and -not $usedGitPull) {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "git required for -GitUrl" }
   $tmp = Join-Path $env:TEMP ("lavs-update-" + [guid]::NewGuid().ToString("n"))
-  Write-Host "git clone --depth 1 -b $Branch $GitUrl → $tmp"
+  Write-Host "git clone --depth 1 -b $Branch $GitUrl -> $tmp"
   git clone --depth 1 --branch $Branch $GitUrl $tmp
   $SourceDir = $tmp
 }
@@ -129,7 +129,7 @@ Write-Host "Sync done."
 if (Test-Path $startAll) {
   Write-Host "OK: start-all.ps1 is now at $startAll"
 } else {
-  Write-Warning "start-all.ps1 still missing under $InstallRoot — SourceDir may be an old checkout."
+  Write-Warning "start-all.ps1 still missing under $InstallRoot - SourceDir may be an old checkout."
 }
 
 Write-Host "If package.json / requirements changed:"

@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Use git (not zip) to pull latest LAVS into a staging folder, then merge into D:\avs.
@@ -44,7 +44,7 @@ if ($GitUrl) {
   $parent = Split-Path $SourceDir -Parent
   if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
   if (Test-Path (Join-Path $SourceDir ".git")) {
-    Write-Host "Existing clone at $SourceDir — fetch/pull $Branch"
+    Write-Host "Existing clone at $SourceDir - fetch/pull $Branch"
     Push-Location $SourceDir
     try {
       git remote set-url origin $GitUrl
@@ -54,10 +54,10 @@ if ($GitUrl) {
     } finally { Pop-Location }
   } else {
     if (Test-Path $SourceDir) {
-      Write-Warning "$SourceDir exists without .git — moving aside"
+      Write-Warning "$SourceDir exists without .git - moving aside"
       Rename-Item $SourceDir ($SourceDir + ".bak-" + (Get-Date -Format "yyyyMMddHHmmss"))
     }
-    Write-Host "git clone --branch $Branch $GitUrl → $SourceDir"
+    Write-Host "git clone --branch $Branch $GitUrl -> $SourceDir"
     git clone --branch $Branch --single-branch $GitUrl $SourceDir
   }
 } elseif ($GitPull) {
@@ -103,7 +103,7 @@ if (Test-Path $apply) {
 $startAll = Join-Path $InstallRoot "scripts\windows\start-all.ps1"
 Write-Host ""
 Write-Host "Git sync done. Verify:"
-Write-Host "  Test-Path $startAll   → $(Test-Path $startAll)"
+Write-Host "  Test-Path $startAll   -> $(Test-Path $startAll)"
 Write-Host "Start:"
 Write-Host "  powershell -ExecutionPolicy Bypass -File `"$startAll`""
 if ($StartAfter -and (Test-Path $startAll)) {

@@ -48,23 +48,27 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\start.ps1
 
 Cloud Agent **不能直接写** `D:\avs`。
 
-### 推荐：Git（zip 下载失败时用这个）
+### 推荐：GitHub `b1owcar/AVS` + 本机 SSH
 
-1. 在 Cursor 点 **Create repo**，复制得到的 HTTPS 地址  
-2. 本机已装 Git 后：
+云端没有你的 GitHub SSH 钥，推不上去。本机用 **avs-main.bundle**（agent 产物）导入后 force-push：
 
 ```powershell
-git --version
-$Url = "https://github.com/<you>/<your-repo>.git"   # 换成 Create repo 后的地址
-git clone --branch main --single-branch $Url C:\Temp\lavs-fresh
-powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\scripts\windows\git-sync-to-avs.ps1 -GitUrl $Url
+# 下载 avs-main.bundle → C:\Temp\avs-main.bundle 后：
+git clone C:\Temp\avs-main.bundle C:\Temp\lavs-fresh
+cd C:\Temp\lavs-fresh
+git checkout main
+git remote remove origin
+git remote add origin git@github.com:b1owcar/AVS.git
+git push -u origin main --force
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\APPLY-TO-D-AVS.ps1
 powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start-all.ps1
 ```
 
-之后更新：
+GitHub 已有完整代码之后的日常更新：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\scripts\windows\git-sync-to-avs.ps1 -SourceDir C:\Temp\lavs-fresh -GitPull
+git -C C:\Temp\lavs-fresh pull origin main
+powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\scripts\windows\git-sync-to-avs.ps1 -SourceDir C:\Temp\lavs-fresh
 ```
 
 ### 备选：zip 同步包

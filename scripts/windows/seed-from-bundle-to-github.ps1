@@ -1,7 +1,7 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-  Import cloud git bundle → push to your GitHub (SSH) → merge into D:\avs.
+  Import cloud git bundle -> push to your GitHub (SSH) -> merge into D:\avs.
 
   Cloud agents cannot use your GitHub SSH key. Run this ON THE OFFICE PC.
 
@@ -52,11 +52,11 @@ Write-Host "GitHub: $GitHubSsh"
 
 if (Test-Path $StageDir) {
   $bak = "$StageDir.bak-$(Get-Date -Format yyyyMMddHHmmss)"
-  Write-Warning "Moving existing $StageDir → $bak"
+  Write-Warning "Moving existing $StageDir -> $bak"
   Rename-Item $StageDir $bak
 }
 
-Write-Host "git clone from bundle → $StageDir"
+Write-Host "git clone from bundle -> $StageDir"
 git clone "$BundlePath" $StageDir
 Push-Location $StageDir
 try {
@@ -64,7 +64,7 @@ try {
   git remote remove origin 2>$null
   git remote add origin $GitHubSsh
   if (-not $SkipPush) {
-    Write-Host "Pushing to GitHub via SSH (may need --force because remote only has LICENSE)…"
+    Write-Host "Pushing to GitHub via SSH (may need --force because remote only has LICENSE)..."
     # Initial GitHub commit (LICENSE only) is unrelated history
     git push -u origin "${Branch}:$Branch" --force
   }
@@ -80,7 +80,7 @@ if (-not $SkipApply) {
   } elseif (Test-Path $sync) {
     & $sync -SourceDir $StageDir -InstallRoot $InstallRoot
   } else {
-    throw "APPLY/git-sync scripts missing inside bundle checkout — bundle may be incomplete."
+    throw "APPLY/git-sync scripts missing inside bundle checkout - bundle may be incomplete."
   }
 }
 

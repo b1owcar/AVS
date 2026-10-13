@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Start ComfyUI + LAVS backend + frontend together (office D:\avs).
@@ -21,7 +21,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Resolve install root: explicit → script-relative repo → D:\avs
+# Resolve install root: explicit -> script-relative repo -> D:\avs
 if (-not $InstallRoot) {
   $guess = Resolve-Path (Join-Path $PSScriptRoot "..\..") -ErrorAction SilentlyContinue
   if ($guess -and (Test-Path (Join-Path $guess "backend"))) {
@@ -75,12 +75,12 @@ function Start-LavsWindow([string]$Title, [string]$Command) {
 if (-not $SkipComfy) {
   $comfyScript = Join-Path $InstallRoot "scripts\windows\start_comfyui.ps1"
   if (-not (Test-Path $comfyScript)) {
-    Write-Warning "start_comfyui.ps1 missing — skip ComfyUI"
+    Write-Warning "start_comfyui.ps1 missing - skip ComfyUI"
   } else {
     $procs += Start-LavsWindow "LAVS ComfyUI :$ComfyPort" (
       "& '$comfyScript' -InstallRoot '$InstallRoot' -Listen '$ComfyListen' -Port $ComfyPort"
     )
-    Write-Host "Waiting briefly for ComfyUI…"
+    Write-Host "Waiting briefly for ComfyUI..."
     Start-Sleep -Seconds 3
   }
 } else {

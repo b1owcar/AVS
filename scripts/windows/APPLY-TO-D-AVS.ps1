@@ -1,9 +1,9 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-  Apply THIS checkout (cloud sync package) onto D:\avs.
+  Apply THIS checkout onto D:\avs.
 
-  Intended use after you unzip the cloud deploy zip to e.g. C:\Temp\lavs-fresh:
+  Example:
     powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\scripts\windows\APPLY-TO-D-AVS.ps1
 
   Preserves D:\avs data, engines, external, .venv, envs\*\.venv, node_modules.
@@ -16,16 +16,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# This script lives in <checkout>\scripts\windows → repo root is ../..
+# This script lives in <checkout>\scripts\windows -> repo root is ../..
 $SourceRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-Write-Host "== APPLY cloud checkout → $InstallRoot =="
+Write-Host "== APPLY cloud checkout -> $InstallRoot =="
 Write-Host "Source: $SourceRoot"
 
 if (-not (Test-Path (Join-Path $SourceRoot "backend\app\main.py"))) {
   throw "Source does not look like LAVS repo root: $SourceRoot"
 }
 if (-not (Test-Path $InstallRoot)) {
-  Write-Warning "$InstallRoot missing — creating skeleton (you may still need setup.ps1 / venv)."
+  Write-Warning "$InstallRoot missing - creating skeleton (you may still need setup.ps1 / venv)."
   New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
 }
 
@@ -45,7 +45,8 @@ New-Item -ItemType Directory -Force -Path $win | Out-Null
 Copy-Item (Join-Path $SourceRoot "scripts\windows\*") $win -Force
 
 # Ensure isolated env worker files exist (do not wipe .venv)
-function Copy-EnvTree([string]$Name) {
+function Copy-EnvTree {
+  param([string]$Name)
   $from = Join-Path $SourceRoot "envs\$Name"
   $to = Join-Path $InstallRoot "envs\$Name"
   if (-not (Test-Path $from)) { return }
@@ -54,10 +55,10 @@ function Copy-EnvTree([string]$Name) {
     Copy-Item $_.FullName (Join-Path $to $_.Name) -Recurse -Force
   }
 }
-Copy-EnvTree "image"
-Copy-EnvTree "pose"
-Copy-EnvTree "motion"
-Copy-EnvTree "trellis"
+Copy-EnvTree -Name "image"
+Copy-EnvTree -Name "pose"
+Copy-EnvTree -Name "motion"
+Copy-EnvTree -Name "trellis"
 
 # config workflows
 $wfFrom = Join-Path $SourceRoot "config\workflows"
@@ -67,8 +68,10 @@ if (Test-Path $wfFrom) {
   Copy-Item (Join-Path $wfFrom "*") $wfTo -Force
 }
 
-if (-not (Test-Path (Join-Path $InstallRoot ".env")) -and (Test-Path (Join-Path $InstallRoot ".env.example"))) {
-  Copy-Item (Join-Path $InstallRoot ".env.example") (Join-Path $InstallRoot ".env")
+$envExample = Join-Path $InstallRoot ".env.example"
+$envFile = Join-Path $InstallRoot ".env"
+if ((-not (Test-Path $envFile)) -and (Test-Path $envExample)) {
+  Copy-Item $envExample $envFile
 }
 
 $startAll = Join-Path $win "start-all.ps1"
@@ -77,16 +80,23 @@ Write-Host ""
 Write-Host "Robocopy finished. start-all.ps1 present: $okStart"
 
 if (-not $SkipNpmPip) {
-  if (Test-Path (Join-Path $InstallRoot ".venv\Scripts\pip.exe")) {
-    Write-Host "Refreshing backend deps…"
-    & (Join-Path $InstallRoot ".venv\Scripts\pip.exe") install -r (Join-Path $InstallRoot "backend\requirements.txt")
+  $pip = Join-Path $InstallRoot ".venv\Scripts\pip.exe"
+  $req = Join-Path $InstallRoot "backend\requirements.txt"
+  if (Test-Path $pip) {
+    Write-Host "Refreshing backend deps..."
+    & $pip install -r $req
   } else {
-    Write-Warning "No $InstallRoot\.venv — run scripts\windows\setup.ps1 before start."
+    Write-Warning "No $InstallRoot\.venv - run scripts\windows\setup.ps1 before start."
   }
-  if (Test-Path (Join-Path $InstallRoot "frontend\package.json")) {
-    Write-Host "Refreshing frontend deps…"
+  $pkg = Join-Path $InstallRoot "frontend\package.json"
+  if (Test-Path $pkg) {
+    Write-Host "Refreshing frontend deps..."
     Push-Location (Join-Path $InstallRoot "frontend")
-    try { npm install } finally { Pop-Location }
+    try {
+      npm install
+    } finally {
+      Pop-Location
+    }
   }
 }
 
