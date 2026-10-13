@@ -29,4 +29,5 @@ if (-not (Test-Path .env)) {
 
 New-Item -ItemType Directory -Force -Path data\models, data\outputs, data\uploads, data\logs, data\db | Out-Null
 Write-Host "Setup complete. Next: scripts\windows\start.ps1"
-Write-Host "Before real inference, run scripts\diagnose\check_environment.ps1"
+Write-Host "Office default install path: D:\avs (see docs\DEPLOY_TO_D_AVS.md)"
+Write-Host "Hardware verification: skipped for office deploy unless you choose to run diagnose scripts."

@@ -27,12 +27,17 @@
 | ComfyUI 工作流执行 | **NOT RUN** / 未实现提交 |
 | 目标机 RTX 5070 Ti 实测 | **PENDING TARGET HARDWARE** |
 
-## 目标电脑建议顺序
+## 办公室部署（用户授权）
 
-见 `docs/DEPLOYMENT_CHECKLIST.md`。
+- 安装根目录：`D:\avs`
+- 一键脚本：`scripts/windows/deploy-to-d-avs.ps1`
+- 说明：`docs/DEPLOY_TO_D_AVS.md`
+- **硬件验证：按用户要求跳过**
+- 云端代理无法直接写入办公室 D 盘；须在 Windows 本机执行部署脚本
 
 ## 禁止声称
 
 - 未将本机 Linux 测试当作 Windows 兼容证明
 - 未将 Mock 成功当作真实 GPU PASS
 - 未下载大型模型权重
+- 未在云端完成对 `D:\avs` 的实际写入

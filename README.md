@@ -18,7 +18,17 @@
 - ComfyUI 工作流提交：仅连接探测骨架
 - 视频抽帧、姿态、动作迁移、三维生成：入口 only
 
-## 快速启动（开发机）
+## 办公室 Windows 部署（`D:\avs`）
+
+见 **[docs/DEPLOY_TO_D_AVS.md](docs/DEPLOY_TO_D_AVS.md)**。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\deploy-to-d-avs.ps1 -InstallRoot "D:\avs"
+```
+
+部署后按用户要求 **跳过硬件验证**。启动：`scripts\windows\start.ps1`。
+
+## 快速启动（开发机 / Linux）
 
 ```bash
 # Linux
