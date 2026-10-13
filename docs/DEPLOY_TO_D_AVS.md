@@ -44,6 +44,23 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\start.ps1
 
 默认 `LAVS_RUN_MODE=simulation`（Mock 可用）。真实 SDXL/Wan 等仍需你之后主动装依赖并下载权重；本步骤不下载模型。
 
+## 云端改完 ≠ 自动进 D:\avs
+
+Cloud Agent **不能**写你办公室的 `D:\avs`。仓库里有 `start-all.ps1` 时，本机要先同步一次才会出现该文件。
+
+```powershell
+# 方式 A：D:\avs 本身是 git clone
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\update-avs.ps1 -GitPull
+
+# 方式 B：另有一份最新 checkout / zip 解压目录
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\update-avs.ps1 -SourceDir "C:\Temp\lavs-fresh"
+
+# 方式 C：用远程 URL 拉到 TEMP 再灌进 D:\avs（需本机已配 git 凭据）
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\update-avs.ps1 -GitUrl "<your-repo-url>"
+```
+
+同步成功后应存在：`D:\avs\scripts\windows\start-all.ps1`。
+
 ## 日常启动（ComfyUI + 前后端）
 
 ```powershell
