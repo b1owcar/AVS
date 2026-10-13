@@ -14,14 +14,18 @@
 #>
 param(
   [string]$InstallRoot = "D:\avs",
-  [string]$GitUrl = "",
+  # Prefer SSH once GitHub has the full tree (after seed-from-bundle-to-github.ps1)
+  [string]$GitUrl = "git@github.com:b1owcar/AVS.git",
   [string]$SourceDir = "C:\Temp\lavs-fresh",
   [string]$Branch = "main",
   [switch]$GitPull,
-  [switch]$StartAfter
+  [switch]$StartAfter,
+  [switch]$NoDefaultUrl
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($NoDefaultUrl) { $GitUrl = "" }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
   throw "git not found. Install Git for Windows, then reopen PowerShell."
@@ -30,7 +34,7 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 # If this script already lives inside a checkout, prefer that as SourceDir
 if ($PSScriptRoot -and (Test-Path (Join-Path $PSScriptRoot "..\..\backend\app\main.py"))) {
   $embeddedRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-  if (-not $GitUrl -and -not $GitPull) {
+  if ((-not $GitUrl -or $NoDefaultUrl) -and -not $GitPull) {
     $SourceDir = $embeddedRoot
     Write-Host "Using checkout that contains this script: $SourceDir"
   }
