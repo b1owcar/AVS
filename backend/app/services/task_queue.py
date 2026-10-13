@@ -10,8 +10,10 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.adapters.comfyui_adapter import ComfyUIAdapter
+from app.adapters.base import ModelAdapter
+from app.adapters.comfyui_adapter import ComfySdxlAdapter, ComfyUIAdapter
 from app.adapters.mock_adapter import MockImageAdapter, UnimplementedNativeAdapter
+from app.adapters.sdxl_adapter import SdxlNativeAdapter
 from app.core.config import Settings
 from app.db.models import AssetRecord, TaskRecord
 from app.db.session import session_factory
@@ -32,12 +34,15 @@ class TaskQueueService:
         self._lock = threading.Lock()
         self._worker: threading.Thread | None = None
         self._stop = threading.Event()
-        self._adapters: dict[str, Any] = {
+        self._adapters: dict[str, ModelAdapter] = {
             "mock-demo": MockImageAdapter(),
-            "sdxl-base-1.0": UnimplementedNativeAdapter(
-                "sdxl-base-1.0",
-                "Stable Diffusion XL Base 1.0",
-                ["text_to_image", "image_to_image", "inpainting"],
+            "sdxl-base-1.0": SdxlNativeAdapter(settings),
+            "sdxl-comfyui": ComfySdxlAdapter(
+                settings.comfyui_url,
+                settings.comfyui_timeout_seconds,
+                output_dir=settings.output_dir,
+                default_checkpoint=settings.comfyui_checkpoint,
+                comfy_output_dir=settings.comfyui_output_dir,
             ),
             "wan2.1-t2v-1.3b": UnimplementedNativeAdapter(
                 "wan2.1-t2v-1.3b",
@@ -45,7 +50,11 @@ class TaskQueueService:
                 ["text_to_video"],
             ),
             "comfyui-bridge": ComfyUIAdapter(
-                settings.comfyui_url, settings.comfyui_timeout_seconds
+                settings.comfyui_url,
+                settings.comfyui_timeout_seconds,
+                output_dir=settings.output_dir,
+                default_checkpoint=settings.comfyui_checkpoint,
+                comfy_output_dir=settings.comfyui_output_dir,
             ),
         }
         self._cancel_flags: dict[str, bool] = {}
@@ -71,21 +80,9 @@ class TaskQueueService:
         parameters: dict[str, Any],
         input_files: list[str] | None = None,
     ) -> TaskRecord:
-        if model_id not in self._adapters and model_id != "mock-demo":
-            # Still allow creating tasks that will fail clearly for unimplemented models
-            pass
-
-        is_simulation = model_id == "mock-demo" or self.settings.is_simulation
-        if model_id != "mock-demo" and not self.settings.is_simulation:
-            # Real mode still blocks unimplemented adapters at execution time
-            is_simulation = False
-
-        if model_id != "mock-demo":
-            # Remote-dev default: refuse pretending real models are ready
-            adapter = self._adapters.get(model_id)
-            if adapter is None or isinstance(adapter, UnimplementedNativeAdapter):
-                # Allow queueing only mock in simulation; others fail immediately on run
-                pass
+        adapter = self._adapters.get(model_id)
+        is_simulation = model_id == "mock-demo"
+        cancellation = model_id in {"mock-demo", "sdxl-comfyui", "comfyui-bridge"}
 
         task = TaskRecord(
             id=str(uuid.uuid4()),
@@ -97,12 +94,10 @@ class TaskQueueService:
             input_files_json=json.dumps(input_files or [], ensure_ascii=False),
             output_files_json="[]",
             logs="",
-            cancellation_supported=(model_id == "mock-demo"),
-            is_simulation=is_simulation if model_id == "mock-demo" else True,
+            cancellation_supported=cancellation,
+            is_simulation=is_simulation,
         )
-        # Mark non-mock as simulation=false only when truly implemented later
-        if model_id != "mock-demo":
-            task.is_simulation = False
+        if adapter is None:
             task.cancellation_supported = False
 
         db.add(task)
@@ -185,6 +180,22 @@ class TaskQueueService:
                 logger.exception("task worker iteration failed")
             self._stop.wait(0.4)
 
+    def _adapter_ready(self, adapter: ModelAdapter) -> tuple[bool, str]:
+        if isinstance(adapter, UnimplementedNativeAdapter):
+            return False, "adapter unimplemented"
+        if isinstance(adapter, MockImageAdapter):
+            return True, "mock"
+        try:
+            env = adapter.validate_environment()
+            if env.get("ok"):
+                return True, str(env.get("message") or "ready")
+            issues = env.get("issues") or [env.get("message") or "not ready"]
+            if isinstance(issues, list):
+                return False, "; ".join(str(i) for i in issues)
+            return False, str(issues)
+        except Exception as exc:  # noqa: BLE001
+            return False, str(exc)
+
     def _process_next(self) -> None:
         SessionLocal = session_factory()
         db = SessionLocal()
@@ -218,14 +229,12 @@ class TaskQueueService:
                 db.commit()
                 return
 
-            # Only mock-demo may execute in remote-dev Phase 1.
-            # Real adapters must fail clearly — never fake success.
-            if task.model_id != "mock-demo" or isinstance(adapter, UnimplementedNativeAdapter):
+            ready, reason = self._adapter_ready(adapter)
+            if not ready:
                 task.status = "failed"
                 task.error_message = (
-                    f"Model '{task.model_id}' is not implemented/verified. "
-                    "Status: PENDING TARGET HARDWARE. "
-                    "UI entry exists but feature is unavailable."
+                    f"Model '{task.model_id}' is not ready: {reason}. "
+                    "Install via scripts/windows/install-phase2.ps1 on D:\\avs."
                 )
                 task.finished_at = _utcnow()
                 task.progress = 0.0

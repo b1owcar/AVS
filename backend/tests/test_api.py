@@ -71,7 +71,7 @@ def test_mock_task_completes(client):
     assert final["progress"] == 1.0
 
 
-def test_unimplemented_model_fails_clearly(client):
+def test_sdxl_not_ready_fails_clearly(client):
     create = client.post(
         "/api/tasks",
         json={
@@ -93,7 +93,25 @@ def test_unimplemented_model_fails_clearly(client):
 
     assert final is not None
     assert final["status"] == "failed"
-    assert "PENDING TARGET HARDWARE" in (final["error_message"] or "")
+    assert "not ready" in (final["error_message"] or "").lower()
+    assert final["is_simulation"] is False
+
+
+def test_comfy_workflow_builder():
+    from app.adapters.comfyui_adapter import build_sdxl_txt2img_workflow
+
+    wf = build_sdxl_txt2img_workflow(
+        prompt="a cat",
+        negative_prompt="",
+        checkpoint="sd_xl_base_1.0.safetensors",
+        width=768,
+        height=768,
+        steps=20,
+        cfg=7.0,
+        seed=1,
+    )
+    assert wf["4"]["class_type"] == "CheckpointLoaderSimple"
+    assert wf["6"]["inputs"]["text"] == "a cat"
 
 
 def test_cancel_pending(client):

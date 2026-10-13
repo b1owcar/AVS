@@ -28,6 +28,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\deploy-to-d-avs.ps1 -
 
 部署后按用户要求 **跳过硬件验证**。启动：`scripts\windows\start.ps1`。
 
+### Phase 2/3：ComfyUI + SDXL
+
+见 `docs/PHASE2_COMFYUI_SDXL.md`。
+
+```powershell
+cd D:\avs
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\install-phase2.ps1 -DownloadWeights
+```
+
 ## 快速启动（开发机 / Linux）
 
 ```bash

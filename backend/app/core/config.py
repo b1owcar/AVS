@@ -37,6 +37,17 @@ class Settings(BaseSettings):
 
     comfyui_url: str = "http://127.0.0.1:8188"
     comfyui_timeout_seconds: float = 5.0
+    comfyui_dir: Path | None = None
+    comfyui_output_dir: Path | None = None
+    comfyui_checkpoint: str = "sd_xl_base_1.0.safetensors"
+
+    # Isolated SDXL env python (venv Scripts/python.exe or bin/python)
+    image_python: Path | None = None
+
+    # Office / real deploy: allow user-triggered weight downloads
+    allow_model_download: bool = False
+    install_root: Path | None = None
+    skip_hardware_verification: bool = False
 
     gpu_memory_reserve_mb: int = 512
     max_concurrent_gpu_tasks: int = 1
@@ -62,21 +73,40 @@ class Settings(BaseSettings):
         mode="before",
     )
     @classmethod
-    def _coerce_path(cls, value: object) -> Path:
+    def _coerce_required_path(cls, value: object) -> Path:
+        return Path(str(value))
+
+    @field_validator(
+        "comfyui_dir",
+        "comfyui_output_dir",
+        "image_python",
+        "install_root",
+        mode="before",
+    )
+    @classmethod
+    def _coerce_optional_path(cls, value: object) -> Path | None:
+        if value is None or value == "":
+            return None
         return Path(str(value))
 
     def resolve_paths(self) -> "Settings":
         root = _project_root()
 
-        def resolve(p: Path) -> Path:
+        def resolve(p: Path | None) -> Path | None:
+            if p is None:
+                return None
             return p if p.is_absolute() else (root / p).resolve()
 
-        self.data_dir = resolve(self.data_dir)
-        self.model_dir = resolve(self.model_dir)
-        self.output_dir = resolve(self.output_dir)
-        self.upload_dir = resolve(self.upload_dir)
-        self.log_dir = resolve(self.log_dir)
-        self.db_path = resolve(self.db_path)
+        self.data_dir = resolve(self.data_dir)  # type: ignore[assignment]
+        self.model_dir = resolve(self.model_dir)  # type: ignore[assignment]
+        self.output_dir = resolve(self.output_dir)  # type: ignore[assignment]
+        self.upload_dir = resolve(self.upload_dir)  # type: ignore[assignment]
+        self.log_dir = resolve(self.log_dir)  # type: ignore[assignment]
+        self.db_path = resolve(self.db_path)  # type: ignore[assignment]
+        self.comfyui_dir = resolve(self.comfyui_dir)
+        self.comfyui_output_dir = resolve(self.comfyui_output_dir)
+        self.image_python = resolve(self.image_python)
+        self.install_root = resolve(self.install_root)
         return self
 
     def ensure_directories(self) -> None:

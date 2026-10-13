@@ -56,7 +56,7 @@ def features() -> StudioCatalog:
                 id="image_studio",
                 label="Image Studio",
                 status="available_simulation",
-                notes="Mock text-to-image available. SDXL pending target hardware.",
+                notes="Mock always available. SDXL native / ComfyUI become available after install-phase2.ps1.",
             ),
             FeatureEntry(
                 id="video_studio",

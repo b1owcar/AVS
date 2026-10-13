@@ -44,8 +44,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\start.ps1
 
 默认 `LAVS_RUN_MODE=simulation`（Mock 可用）。真实 SDXL/Wan 等仍需你之后主动装依赖并下载权重；本步骤不下载模型。
 
+## 下一步：ComfyUI / SDXL（Phase 2/3）
+
+见 **[PHASE2_COMFYUI_SDXL.md](./PHASE2_COMFYUI_SDXL.md)**：
+
+```powershell
+cd D:\avs
+powershell -ExecutionPolicy Bypass -File .\scripts\windows\install-phase2.ps1 -DownloadWeights
+```
+
 ## 部署后不会做的事
 
 - 不跑 `scripts/diagnose/check_environment.*` 作为必经步骤  
 - 不强制 GPU / CUDA 验收  
-- 不自动下载大型模型权重  
+- 不在 API 进程内流式下载多 GB 权重（改用本机安装脚本）  

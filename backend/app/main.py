@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.db.session import init_db, session_factory
 from app.services.model_registry import seed_models
+from app.services.readiness import refresh_model_availability
 from app.services.task_queue import TaskQueueService
 
 
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
     db = session_factory()()
     try:
         seed_models(db)
+        refresh_model_availability(db, settings)
     finally:
         db.close()
 
