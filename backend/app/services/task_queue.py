@@ -13,8 +13,10 @@ from sqlalchemy.orm import Session
 from app.adapters.base import ModelAdapter
 from app.adapters.comfyui_adapter import ComfySdxlAdapter, ComfyUIAdapter
 from app.adapters.mock_adapter import MockImageAdapter
+from app.adapters.motion_adapter import MotionTransferAdapter, SkeletonComposePreviewAdapter
 from app.adapters.pose_adapter import PoseMediapipeAdapter
 from app.adapters.sdxl_adapter import SdxlNativeAdapter
+from app.adapters.trellis_adapter import TrellisImageTo3DAdapter, VideoTo3DKeyframeAdapter
 from app.adapters.wan_comfy_adapter import WanI2VAdapter, WanT2VAdapter
 from app.core.config import Settings
 from app.db.models import AssetRecord, TaskRecord
@@ -56,6 +58,10 @@ class TaskQueueService:
             "wan2.1-t2v-1.3b": WanT2VAdapter(settings),
             "wan2.1-i2v": WanI2VAdapter(settings),
             "pose-mediapipe": PoseMediapipeAdapter(settings),
+            "motion-transfer": MotionTransferAdapter(settings),
+            "skeleton-compose-preview": SkeletonComposePreviewAdapter(settings),
+            "trellis-image-to-3d": TrellisImageTo3DAdapter(settings),
+            "video-to-3d-keyframe": VideoTo3DKeyframeAdapter(settings),
             "comfyui-bridge": ComfyUIAdapter(
                 settings.comfyui_url,
                 settings.comfyui_timeout_seconds,

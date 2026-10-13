@@ -6,8 +6,10 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.adapters.comfyui_adapter import ComfyUIAdapter
+from app.adapters.motion_adapter import MotionTransferAdapter, SkeletonComposePreviewAdapter
 from app.adapters.pose_adapter import PoseMediapipeAdapter
 from app.adapters.sdxl_adapter import SdxlNativeAdapter
+from app.adapters.trellis_adapter import TrellisImageTo3DAdapter, VideoTo3DKeyframeAdapter
 from app.adapters.wan_comfy_adapter import WanI2VAdapter, WanT2VAdapter
 from app.core.config import Settings
 from app.db.models import ModelRecord
@@ -120,6 +122,59 @@ def refresh_model_availability(db: Session, settings: Settings) -> dict[str, Any
             prow.notes = "; ".join(pose_env.get("issues") or [])
         report["pose-mediapipe"] = {"availability": prow.availability, "env": pose_env}
 
+    motion = MotionTransferAdapter(settings).validate_environment()
+    mrow = db.get(ModelRecord, "motion-transfer")
+    if mrow is not None:
+        if motion.get("ok"):
+            mrow.environment_status = "ready"
+            mrow.availability = "available"
+            mrow.verification_status = "installed_unverified"
+            mrow.notes = "env-motion + weights present."
+        else:
+            mrow.environment_status = "not_installed"
+            mrow.availability = "unavailable"
+            mrow.verification_status = "unverified"
+            mrow.notes = "; ".join(motion.get("issues") or [])
+        report["motion-transfer"] = {"availability": mrow.availability, "env": motion}
+
+    compose = SkeletonComposePreviewAdapter(settings).validate_environment()
+    crow = db.get(ModelRecord, "skeleton-compose-preview")
+    if crow is not None:
+        crow.environment_status = "ready"
+        crow.availability = "available"
+        crow.verification_status = "logic_only"
+        crow.notes = "Preview helper only — NOT motion transfer."
+        report["skeleton-compose-preview"] = {"availability": crow.availability, "env": compose}
+
+    trellis = TrellisImageTo3DAdapter(settings).validate_environment()
+    trow = db.get(ModelRecord, "trellis-image-to-3d")
+    if trow is not None:
+        if trellis.get("ok"):
+            trow.environment_status = "ready"
+            trow.availability = "available_conditional"
+            trow.verification_status = "installed_unverified"
+            trow.notes = "env-trellis python set; still requires trellis_runner + sufficient VRAM."
+        else:
+            trow.environment_status = "not_installed"
+            trow.availability = "unavailable"
+            trow.verification_status = "unverified"
+            trow.notes = "; ".join(trellis.get("issues") or [])
+        report["trellis-image-to-3d"] = {"availability": trow.availability, "env": trellis}
+
+    v3d = VideoTo3DKeyframeAdapter(settings).validate_environment()
+    vrow = db.get(ModelRecord, "video-to-3d-keyframe")
+    if vrow is not None:
+        if v3d.get("ok"):
+            vrow.environment_status = "ready"
+            vrow.availability = "available"
+            vrow.verification_status = "logic_only"
+            vrow.notes = "FFmpeg keyframe approx ready — not full geometry recovery."
+        else:
+            vrow.environment_status = "not_installed"
+            vrow.availability = "unavailable"
+            vrow.notes = str(v3d.get("message"))
+        report["video-to-3d-keyframe"] = {"availability": vrow.availability, "env": v3d}
+
     mock = db.get(ModelRecord, "mock-demo")
     if mock is not None:
         mock.availability = "available_simulation"
@@ -139,6 +194,10 @@ def install_hints(settings: Settings) -> dict[str, Any]:
             "comfyui": "scripts/windows/install-comfyui.ps1",
             "sdxl": "scripts/windows/install-sdxl.ps1",
             "pose": "scripts/windows/install-pose.ps1",
+            "motion": "scripts/windows/install-motion.ps1",
+            "trellis_win": "scripts/windows/install-trellis.ps1",
+            "trellis_linux": "scripts/linux/install-trellis.sh",
+            "linux_smoke": "scripts/linux/smoke.sh",
             "start_comfyui": "scripts/windows/start_comfyui.ps1",
             "start_sdxl_worker": "scripts/windows/start_sdxl_worker.ps1",
         },

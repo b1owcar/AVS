@@ -48,6 +48,10 @@ class Settings(BaseSettings):
 
     # Pose worker python (env-pose)
     pose_python: Path | None = None
+    # Motion transfer worker python (env-motion) — Stage 2 real transfer
+    motion_python: Path | None = None
+    # TRELLIS worker python (env-trellis) — Phase 6 experimental
+    trellis_python: Path | None = None
 
     # Office / real deploy: allow user-triggered weight downloads
     allow_model_download: bool = False
@@ -86,6 +90,8 @@ class Settings(BaseSettings):
         "comfyui_output_dir",
         "image_python",
         "pose_python",
+        "motion_python",
+        "trellis_python",
         "install_root",
         mode="before",
     )
@@ -113,6 +119,8 @@ class Settings(BaseSettings):
         self.comfyui_output_dir = resolve(self.comfyui_output_dir)
         self.image_python = resolve(self.image_python)
         self.pose_python = resolve(self.pose_python)
+        self.motion_python = resolve(self.motion_python)
+        self.trellis_python = resolve(self.trellis_python)
         self.install_root = resolve(self.install_root)
         return self
 

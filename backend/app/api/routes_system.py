@@ -68,13 +68,13 @@ def features() -> StudioCatalog:
                 id="motion_studio",
                 label="Motion Studio",
                 status="available",
-                notes="Phase 5 stage-1 pose extract (MediaPipe/env-pose). Motion transfer still Stage 2.",
+                notes="Phase 5: pose extract + transfer adapter (needs env-motion/weights) + skeleton compose helper.",
             ),
             FeatureEntry(
                 id="studio_3d",
                 label="3D Studio",
-                status="entry_only",
-                notes="Parameter schemas ready; TRELLIS worker placeholder only.",
+                status="available",
+                notes="Phase 6: TRELLIS image-to-3d (env-trellis) + video keyframe_approx (not full geometry).",
             ),
             FeatureEntry(
                 id="model_manager",

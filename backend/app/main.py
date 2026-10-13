@@ -9,6 +9,7 @@ from app.api import (
     routes_assets,
     routes_models,
     routes_motion,
+    routes_studio3d,
     routes_system,
     routes_tasks,
     routes_video,
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_assets.router, prefix="/api")
     app.include_router(routes_video.router, prefix="/api")
     app.include_router(routes_motion.router, prefix="/api")
+    app.include_router(routes_studio3d.router, prefix="/api")
     return app
 
 

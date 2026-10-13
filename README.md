@@ -11,7 +11,9 @@
 | 2 | ComfyUI + SDXL（含 warm worker） | 代码完成；本机 GPU 验证在办公室 |
 | 3 | 视频预处理框架 | 完成（FFmpeg） |
 | 4 | Wan T2V + **I2V** | 代码完成；需 ComfyUI + 权重 |
-| 5 | 姿态提取阶段一 | 代码完成；需 `install-pose.ps1` |
+| 5 | 姿态提取 + 动作迁移框架 | 代码完成；transfer 权重用户自备 |
+| 6 | TRELLIS / video keyframe≈3D | 代码完成；TRELLIS 需本机 runner |
+| 7 | Linux 冒烟 | `scripts/linux/smoke.sh` |
 | — | SAST | 见 `docs/SAST_REPORT.md` |
 
 Cloud / 远程环境**不能**写入 `D:\avs`；用更新脚本同步到办公室 PC。
@@ -63,7 +65,8 @@ pytest backend/tests -q
 ## 文档
 
 - `docs/PHASE0_DESIGN.md` · `docs/PHASE2_COMFYUI_SDXL.md` · `docs/PHASE3_VIDEO_FRAMEWORK.md`
-- `docs/PHASE4_WAN_ALIGN.md` · `docs/PHASE5_POSE.md` · `docs/SAST_REPORT.md`
+- `docs/PHASE4_WAN_ALIGN.md` · `docs/PHASE5_POSE.md` · `docs/PHASE6_3D.md` · `docs/PHASE7_LINUX.md`
+- `docs/SAST_REPORT.md`
 - `docs/MODEL_INSTALL.md` · `docs/TROUBLESHOOTING.md`
 
 ## 原则

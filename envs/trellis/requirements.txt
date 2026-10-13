@@ -1,0 +1,9 @@
+# Isolated TRELLIS environment — do NOT merge into main backend .venv.
+# Official microsoft/TRELLIS install is complex (CUDA extensions, Linux-first).
+# This file only lists helper packages; install TRELLIS itself per upstream docs
+# after creating the venv via scripts/linux/install-trellis.sh.
+
+Pillow>=10.4.0,<12.0.0
+numpy>=1.26.0,<3.0.0
+# Add torch / trellis deps on the target machine following:
+# https://github.com/microsoft/TRELLIS

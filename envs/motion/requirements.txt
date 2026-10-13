@@ -1,0 +1,7 @@
+# Isolated motion-transfer environment (Stage 2).
+# Do NOT install into the main backend .venv.
+# Concrete transfer stack (AnimateAnyone / MimicMotion / etc.) is user-chosen —
+# add those deps when wiring a specific backend in worker_transfer.py.
+
+Pillow>=10.4.0,<12.0.0
+numpy>=1.26.0,<3.0.0

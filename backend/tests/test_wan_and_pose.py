@@ -134,7 +134,7 @@ def test_motion_status(client):
     resp = client.get("/api/motion/status")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["stage"] == 1
+    assert data["stage"] >= 1
     assert "pose_extract" in data
 
 

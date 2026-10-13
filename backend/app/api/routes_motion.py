@@ -22,27 +22,36 @@ def _asset_path(db: Session, asset_id: str) -> Path:
 
 @router.get("/motion/status")
 def motion_status(settings: SettingsDep) -> dict:
+    from app.adapters.motion_adapter import MotionTransferAdapter, SkeletonComposePreviewAdapter
     from app.adapters.pose_adapter import PoseMediapipeAdapter
 
-    pose = PoseMediapipeAdapter(settings)
-    env = pose.validate_environment()
+    pose = PoseMediapipeAdapter(settings).validate_environment()
+    transfer = MotionTransferAdapter(settings).validate_environment()
+    compose = SkeletonComposePreviewAdapter(settings).validate_environment()
     return {
-        "stage": 1,
+        "stage": 2,
         "pose_extract": {
-            "ready": bool(env.get("ok")),
+            "ready": bool(pose.get("ok")),
             "model_id": "pose-mediapipe",
-            "env": env,
+            "env": pose,
         },
         "motion_transfer": {
-            "ready": False,
-            "notes": "Stage 2 — transfer models not wired yet. Pose extract ≠ motion transfer.",
+            "ready": bool(transfer.get("ok")),
+            "model_id": "motion-transfer",
+            "env": transfer,
+            "notes": "Stage 2 real transfer — pose extract ≠ motion transfer.",
+        },
+        "skeleton_compose_preview": {
+            "ready": bool(compose.get("ok")),
+            "model_id": "skeleton-compose-preview",
+            "notes": "Utility overlay only — NOT motion transfer inference.",
         },
         "workflow": [
             "Import / preprocess reference video (Video Studio)",
             "Select extracted frames",
             "Optional person_id (MediaPipe Pose is single-person)",
             "Run pose_extract → pose JSON + skeleton preview",
-            "Stage 2: motion transfer (not available)",
+            "Stage 2: motion-transfer (needs env-motion + weights) or skeleton-compose-preview helper",
         ],
     }
 
@@ -62,11 +71,9 @@ def extract_pose(
     body: PoseExtractParams,
     db: DbDep,
     queue: QueueDep,
-    settings: SettingsDep,
 ) -> dict:
     """Enqueue Phase 5 stage-1 pose extract. Requires frame image assets (not raw video)."""
     ref = _asset_path(db, body.reference_video_asset_id)
-    # Accept either a single image asset or a JSON list of frame paths stored as asset metadata
     frame_paths: list[str] = []
     suffix = ref.suffix.lower()
     if suffix in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}:
@@ -88,7 +95,6 @@ def extract_pose(
             ),
         )
 
-    # Optional: extra frame asset ids in notes is not used; support multi via parameters later
     parameters = {
         "frame_paths": frame_paths,
         "person_id": body.person_id,
@@ -142,5 +148,67 @@ def validate_transfer(body: MotionTransferParams) -> dict:
         "ok": True,
         "validated": body.model_dump(),
         "execution": "not_started",
-        "message": "Stage 2 motion transfer not wired — validation only.",
+        "message": (
+            "Params valid. Real transfer needs env-motion + weights. "
+            "skeleton-compose-preview is a separate helper and is not transfer."
+        ),
     }
+
+
+@router.post("/motion/transfer")
+def run_transfer(body: MotionTransferParams, db: DbDep, queue: QueueDep) -> dict:
+    if body.target_type != "person_image":
+        raise HTTPException(
+            status_code=400,
+            detail="stage-2 currently supports target_type=person_image only",
+        )
+    # Pose JSON asset: expect a generated .json from pose extract
+    pose_path = _asset_path(db, body.reference_video_asset_id)
+    if pose_path.suffix.lower() != ".json":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "reference_video_asset_id for transfer must be the pose JSON asset "
+                "from stage-1 (file_type=json), not the raw video."
+            ),
+        )
+    target_path = _asset_path(db, body.target_asset_id)
+    model_id = body.model_id or "motion-transfer"
+    task = queue.create_task(
+        db,
+        task_type="motion_transfer",
+        model_id=model_id,
+        parameters={
+            "pose_json_path": str(pose_path),
+            "target_image_path": str(target_path),
+            "target_type": body.target_type,
+            "selected_person_id": body.selected_person_id,
+        },
+        input_files=[str(pose_path), str(target_path)],
+    )
+    return queue.serialize(task)
+
+
+@router.post("/motion/compose-preview")
+def compose_preview(body: dict, db: DbDep, queue: QueueDep) -> dict:
+    """Skeleton overlay helper — explicitly NOT motion transfer."""
+    pose_id = body.get("pose_json_asset_id")
+    target_id = body.get("target_image_asset_id")
+    if not pose_id or not target_id:
+        raise HTTPException(
+            status_code=400,
+            detail="pose_json_asset_id and target_image_asset_id required",
+        )
+    pose_path = _asset_path(db, str(pose_id))
+    target_path = _asset_path(db, str(target_id))
+    task = queue.create_task(
+        db,
+        task_type="skeleton_compose_preview",
+        model_id="skeleton-compose-preview",
+        parameters={
+            "pose_json_path": str(pose_path),
+            "target_image_path": str(target_path),
+        },
+        input_files=[str(pose_path), str(target_path)],
+    )
+    return queue.serialize(task)
