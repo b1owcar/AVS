@@ -28,13 +28,21 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\deploy-to-d-avs.ps1 -
 
 部署后按用户要求 **跳过硬件验证**。启动：`scripts\windows\start.ps1`。
 
-### Phase 2/3：ComfyUI + SDXL
+### Phase 2：ComfyUI + SDXL
 
 见 `docs/PHASE2_COMFYUI_SDXL.md`。
 
 ```powershell
 cd D:\avs
 powershell -ExecutionPolicy Bypass -File .\scripts\windows\install-phase2.ps1 -DownloadWeights
+```
+
+### Phase 3：视频预处理框架
+
+见 `docs/PHASE3_VIDEO_FRAMEWORK.md`。Video Studio 已支持 FFmpeg 抽帧/裁剪（无需 GPU）。更新本机代码：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\update-avs.ps1 -SourceDir "<fresh-checkout>"
 ```
 
 ## 快速启动（开发机 / Linux）

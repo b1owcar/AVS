@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import { api, type FeatureEntry } from './api'
+import { api } from './api'
 import { DashboardPage } from './pages/DashboardPage'
 import { ImageStudioPage } from './pages/ImageStudioPage'
-import { PlaceholderStudioPage } from './pages/PlaceholderStudioPage'
+import { VideoStudioPage } from './pages/VideoStudioPage'
+import { MotionStudioPage } from './pages/MotionStudioPage'
+import { Studio3DPage } from './pages/Studio3DPage'
 import { ModelManagerPage } from './pages/ModelManagerPage'
 import { TaskQueuePage } from './pages/TaskQueuePage'
 import { AssetLibraryPage } from './pages/AssetLibraryPage'
@@ -23,17 +25,15 @@ const NAV = [
 
 export default function App() {
   const [runMode, setRunMode] = useState<string>('unknown')
-  const [features, setFeatures] = useState<FeatureEntry[]>([])
   const [backendOk, setBackendOk] = useState<boolean | null>(null)
 
   useEffect(() => {
     let alive = true
     ;(async () => {
       try {
-        const [health, feat] = await Promise.all([api.health(), api.features()])
+        const health = await api.health()
         if (!alive) return
         setRunMode(health.run_mode)
-        setFeatures(feat.features)
         setBackendOk(true)
       } catch {
         if (!alive) return
@@ -44,8 +44,6 @@ export default function App() {
       alive = false
     }
   }, [])
-
-  const featureMap = Object.fromEntries(features.map((f) => [f.id, f]))
 
   return (
     <div className="app-shell">
@@ -80,36 +78,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/image" element={<ImageStudioPage />} />
-          <Route
-            path="/video"
-            element={
-              <PlaceholderStudioPage
-                title="Video Studio"
-                feature={featureMap.video_studio}
-                detail="Text-to-video / image-to-video entries are reserved. Wan 2.1 T2V 1.3B via ComfyUI is the first candidate after FFmpeg preprocess lands on the target PC."
-              />
-            }
-          />
-          <Route
-            path="/motion"
-            element={
-              <PlaceholderStudioPage
-                title="Motion Studio"
-                feature={featureMap.motion_studio}
-                detail="Phase plan: frame extract → person select → pose extract → JSON motion → transfer model. Pose ≠ full motion transfer."
-              />
-            }
-          />
-          <Route
-            path="/3d"
-            element={
-              <PlaceholderStudioPage
-                title="3D Studio"
-                feature={featureMap.studio_3d}
-                detail="TRELLIS stays in an isolated experimental environment. Official docs require Linux testing and ≥16GB VRAM — target laptop VRAM is unverified."
-              />
-            }
-          />
+          <Route path="/video" element={<VideoStudioPage />} />
+          <Route path="/motion" element={<MotionStudioPage />} />
+          <Route path="/3d" element={<Studio3DPage />} />
           <Route path="/models" element={<ModelManagerPage />} />
           <Route path="/tasks" element={<TaskQueuePage />} />
           <Route path="/assets" element={<AssetLibraryPage />} />

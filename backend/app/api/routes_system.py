@@ -61,20 +61,20 @@ def features() -> StudioCatalog:
             FeatureEntry(
                 id="video_studio",
                 label="Video Studio",
-                status="entry_only",
-                notes="UI entry only. Wan / ComfyUI not verified.",
+                status="available",
+                notes="FFmpeg preprocess available. T2V/I2V generation still unavailable until Wan/Comfy installed.",
             ),
             FeatureEntry(
                 id="motion_studio",
                 label="Motion Studio",
                 status="entry_only",
-                notes="Pose / motion transfer not implemented.",
+                notes="Parameter schemas ready; pose/transfer models not wired.",
             ),
             FeatureEntry(
                 id="studio_3d",
                 label="3D Studio",
                 status="entry_only",
-                notes="TRELLIS experimental; unavailable until isolated env verified.",
+                notes="Parameter schemas ready; TRELLIS worker placeholder only.",
             ),
             FeatureEntry(
                 id="model_manager",
