@@ -44,9 +44,24 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\start.ps1
 
 默认 `LAVS_RUN_MODE=simulation`（Mock 可用）。真实 SDXL/Wan 等仍需你之后主动装依赖并下载权重；本步骤不下载模型。
 
+## 云端进度部署到本机（推荐）
+
+Cloud Agent **不能直接写** `D:\avs`。请下载同步包后在办公室执行：
+
+1. 下载 `lavs-cloud-sync-latest.zip`（agent 产物 / store media）
+2. 解压到 `C:\Temp\lavs-fresh`（目录内应有 `APPLY-TO-D-AVS.ps1`、`backend\`、`frontend\`）
+3. 本机 PowerShell：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Temp\lavs-fresh\APPLY-TO-D-AVS.ps1
+powershell -ExecutionPolicy Bypass -File D:\avs\scripts\windows\start-all.ps1
+```
+
+会保留 `data` / `engines` / `external` / `.venv`，并强制写入 `scripts\windows\*`。
+
 ## 云端改完 ≠ 自动进 D:\avs
 
-Cloud Agent **不能**写你办公室的 `D:\avs`。仓库里有 `start-all.ps1` 时，本机要先同步一次才会出现该文件。
+仓库里有新脚本时，本机要先按上面同步一次才会出现该文件。
 
 ```powershell
 # 方式 A：D:\avs 本身是 git clone
