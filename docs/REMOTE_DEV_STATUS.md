@@ -1,43 +1,33 @@
 # 远程开发状态报告
 
 **模式**：Remote Development Mode  
-**日期**：2026-10-12  
+**更新日期**：2026-10-13  
 
-## 已实现
+以 `README.md` §11 为准（勿用 `PHASE0_DESIGN.md` §9 旧表）。
 
-- Phase 0 设计与模型调研文档
-- FastAPI + SQLite 基础后端
-- 模型注册表（含候选模型元数据，无权重）
-- 任务队列（串行 worker、状态机、取消 pending、失败重试入口）
-- 素材上传/列表/删除（路径安全）
-- Mock 图像适配器（明确 Simulation）
-- ComfyUI 连通性探测骨架
-- React 工作站 UI（全部导航入口）
-- Windows / Linux setup & start、诊断脚本、部署清单
+## 已实现（代码）
 
-## 当前环境测试分级
+- Phase 0–7 主线：见 README 进度表
+- FastAPI + SQLite + 任务队列 + 素材库 + Model Registry
+- SDXL native / ComfyUI / Wan T2V+I2V / pose / motion（可插拔） / TRELLIS runner
+- Dashboard 实时 Feature readiness
+- Windows `D:\avs` 同步：`APPLY-TO-D-AVS` / `git-sync` / `start-all`
+- Linux `scripts/linux/smoke.sh`
+
+## 测试分级
 
 | 项 | 结果 |
 |----|------|
-| 后端单元/API 测试（10） | **PASS** |
+| 后端 pytest | **PASS**（逻辑） |
 | Mock 图像任务 | **SIMULATED** |
-| 系统硬件探测 | **PASS**（当前开发机；无 NVIDIA → degraded） |
-| SDXL / Wan / SAM2 / TRELLIS 真实推理 | **PENDING TARGET HARDWARE** |
-| Windows 原生安装 | **NOT RUN** |
-| ComfyUI 工作流执行 | **NOT RUN** / 未实现提交 |
-| 目标机 RTX 5070 Ti 实测 | **PENDING TARGET HARDWARE** |
-
-## 办公室部署（用户授权）
-
-- 安装根目录：`D:\avs`
-- 一键脚本：`scripts/windows/deploy-to-d-avs.ps1`
-- 说明：`docs/DEPLOY_TO_D_AVS.md`
-- **硬件验证：按用户要求跳过**
-- 云端代理无法直接写入办公室 D 盘；须在 Windows 本机执行部署脚本
+| 办公室 Windows GPU SDXL / Wan | **本机验收**（云端不代跑） |
+| Motion 真实迁移 | **需用户接线** `run_transfer.py` / Comfy 工作流 |
+| TRELLIS 真推理 | **需本机** microsoft/TRELLIS + ≥16GB VRAM |
+| Linux GPU 对等 | **NOT RUN** |
 
 ## 禁止声称
 
-- 未将本机 Linux 测试当作 Windows 兼容证明
-- 未将 Mock 成功当作真实 GPU PASS
-- 未下载大型模型权重
-- 未在云端完成对 `D:\avs` 的实际写入
+- 未将 Mock / compose preview 当作真实推理或动作迁移
+- 未将 keyframe_approx 当作完整几何重建
+- 未将云端 Linux 逻辑测试当作 Windows GPU PASS
+- 未在远程环境自动下载大型权重

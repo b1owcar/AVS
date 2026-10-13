@@ -14,6 +14,7 @@ New-Item -ItemType Directory -Force -Path $EnvDir | Out-Null
 $repo = Join-Path $PSScriptRoot "..\..\envs\trellis"
 Copy-Item (Join-Path $repo "requirements.txt") (Join-Path $EnvDir "requirements.txt") -Force
 Copy-Item (Join-Path $repo "worker_image_to_3d.py") (Join-Path $EnvDir "worker_image_to_3d.py") -Force
+Copy-Item (Join-Path $repo "trellis_runner.py") (Join-Path $EnvDir "trellis_runner.py") -Force
 Copy-Item (Join-Path $repo "trellis_runner.example.py") (Join-Path $EnvDir "trellis_runner.example.py") -Force
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) { throw "python not found" }
@@ -24,7 +25,7 @@ $py = Join-Path $EnvDir ".venv\Scripts\python.exe"
 & $py -m pip install -r requirements.txt
 
 Write-Host "Scaffold only. Next (manual, prefer WSL/Linux):"
-Write-Host "  1) Follow https://github.com/microsoft/TRELLIS"
-Write-Host "  2) Provide trellis_runner.py (see trellis_runner.example.py)"
+Write-Host "  1) Follow https://github.com/microsoft/TRELLIS and install into this venv"
+Write-Host "  2) trellis_runner.py is shipped — calls TrellisImageTo3DPipeline when importable"
 Write-Host "  3) Set LAVS_TRELLIS_PYTHON=$py"
 Write-Host "Do not mark TRELLIS as Windows-verified without local PASS."

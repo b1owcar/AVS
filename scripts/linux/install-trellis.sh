@@ -13,6 +13,7 @@ echo "Official: Linux + stated >=16GB VRAM. This script only scaffolds isolation
 mkdir -p "$ENV_DIR"
 cp -f "$ROOT/envs/trellis/requirements.txt" "$ENV_DIR/"
 cp -f "$ROOT/envs/trellis/worker_image_to_3d.py" "$ENV_DIR/"
+cp -f "$ROOT/envs/trellis/trellis_runner.py" "$ENV_DIR/"
 cp -f "$ROOT/envs/trellis/trellis_runner.example.py" "$ENV_DIR/"
 
 python3 -m venv "$ENV_DIR/.venv"
@@ -36,9 +37,9 @@ fi
 
 cat > "$ENV_DIR/NEXT_STEPS.txt" <<EOF
 1. Clone microsoft/TRELLIS and install per upstream README into this venv.
-2. Copy trellis_runner.example.py → trellis_runner.py and implement run_image_to_3d.
+2. trellis_runner.py is already shipped — it calls TrellisImageTo3DPipeline when importable.
 3. Confirm GPU VRAM (>=16GB stated upstream) before claiming support.
-4. Restart LAVS; 3D Studio image-to-3d should flip ready when import works.
+4. Restart LAVS; 3D Studio image-to-3d runs when TRELLIS imports successfully.
 EOF
 
 echo "Scaffold done. LAVS_TRELLIS_PYTHON=$PY"

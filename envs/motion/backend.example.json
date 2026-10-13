@@ -1,0 +1,5 @@
+{
+  "backend": "external_script",
+  "script": "run_transfer.py",
+  "notes": "Place this file beside run_transfer.py under data/models/motion-transfer/. Other backends: set backend to comfyui and provide workflow_file + comfyui_url."
+}

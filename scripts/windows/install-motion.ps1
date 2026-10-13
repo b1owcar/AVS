@@ -16,18 +16,25 @@ New-Item -ItemType Directory -Force -Path $EnvDir | Out-Null
 $repo = Join-Path $PSScriptRoot "..\..\envs\motion"
 Copy-Item (Join-Path $repo "requirements.txt") (Join-Path $EnvDir "requirements.txt") -Force
 Copy-Item (Join-Path $repo "worker_transfer.py") (Join-Path $EnvDir "worker_transfer.py") -Force
+Copy-Item (Join-Path $repo "run_transfer.example.py") (Join-Path $EnvDir "run_transfer.example.py") -Force
+Copy-Item (Join-Path $repo "backend.example.json") (Join-Path $EnvDir "backend.example.json") -Force
 
 Set-Location $EnvDir
 if (-not (Test-Path ".venv")) { python -m venv .venv }
 $py = Join-Path $EnvDir ".venv\Scripts\python.exe"
 & $py -m pip install --upgrade pip
 & $py -m pip install -r requirements.txt
+& $py -m pip install "httpx>=0.27,<1.0"
 
 $weights = Join-Path $InstallRoot "data\models\motion-transfer"
 New-Item -ItemType Directory -Force -Path $weights | Out-Null
+Copy-Item (Join-Path $repo "run_transfer.example.py") (Join-Path $weights "run_transfer.example.py") -Force
+Copy-Item (Join-Path $repo "backend.example.json") (Join-Path $weights "backend.example.json") -Force
 Set-Content -Path (Join-Path $weights "README.txt") -Value @(
-  "Place a chosen Stage-2 motion-transfer weight pack here.",
-  "Until worker_transfer.py is extended for that pack, transfer tasks will fail honestly.",
+  "Wire a Stage-2 backend here:",
+  "  1) Copy run_transfer.example.py to run_transfer.py and implement run_transfer(), OR",
+  "  2) Add backend.json (see backend.example.json) for external_script / comfyui.",
+  "README alone does NOT mark transfer ready.",
   "Skeleton compose preview is NOT motion transfer."
 ) -Encoding UTF8
 
@@ -44,4 +51,4 @@ function Set-EnvKey([string]$Path, [string]$Key, [string]$Value) {
 }
 Set-EnvKey $envFile "LAVS_MOTION_PYTHON" $py
 Write-Host "Done. LAVS_MOTION_PYTHON=$py"
-Write-Host "Add weights under $weights then extend envs/motion/worker_transfer.py"
+Write-Host "Wire backend under $weights (run_transfer.py or backend.json), then restart LAVS."

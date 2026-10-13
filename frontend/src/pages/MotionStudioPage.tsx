@@ -91,6 +91,11 @@ export function MotionStudioPage() {
         setError(String(current.error_message || 'pose extract failed'))
       }
       await refresh()
+      if (String(current.status) === 'completed') {
+        const as = await api.assets()
+        const jsons = as.assets.filter((a) => String(a.file_type).toLowerCase() === 'json')
+        if (jsons[0]) setPoseJsonId(String(jsons[0].asset_id))
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -238,9 +243,10 @@ export function MotionStudioPage() {
       <section className="panel">
         <h2>Motion transfer (stage 2)</h2>
         <div className="callout info">
-          Needs pose JSON asset + target person image. Real transfer requires{' '}
-          <code>install-motion.ps1</code> and weights. Compose preview is labeled and is not
-          transfer.
+          Needs pose JSON + target person image. Ready after{' '}
+          <code>install-motion.ps1</code> (or Linux <code>install-motion.sh</code>) and a wired
+          backend (<code>run_transfer.py</code> or <code>backend.json</code>). Compose preview is
+          not transfer.
         </div>
         <form className="form" onSubmit={onTransfer}>
           <label>

@@ -57,30 +57,63 @@ class MotionTransferAdapter(ModelAdapter):
     def weights_dir(self) -> Path:
         return Path(self.settings.model_dir) / "motion-transfer"
 
+    def _detect_backend(self) -> dict[str, Any]:
+        """Ready only when a concrete backend is wired (not README.txt alone)."""
+        root = self.weights_dir
+        if not root.exists():
+            return {"ok": False, "backend": None, "detail": "weights_dir missing"}
+        if (root / "run_transfer.py").exists():
+            return {"ok": True, "backend": "external_script", "detail": "run_transfer.py"}
+        cfg_path = root / "backend.json"
+        if cfg_path.exists():
+            try:
+                cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                return {"ok": False, "backend": None, "detail": f"backend.json invalid: {exc}"}
+            backend = str(cfg.get("backend") or "").lower()
+            if backend in {"external_script", "comfyui"}:
+                return {"ok": True, "backend": backend, "detail": f"backend.json:{backend}"}
+            return {
+                "ok": False,
+                "backend": backend or None,
+                "detail": f"unsupported backend in backend.json: {backend!r}",
+            }
+        return {
+            "ok": False,
+            "backend": None,
+            "detail": (
+                f"No run_transfer.py / backend.json under {root}. "
+                "See envs/motion/run_transfer.example.py"
+            ),
+        }
+
     def validate_environment(self) -> dict[str, Any]:
         issues: list[str] = []
         py = self.motion_python
         if py is None or not py.exists():
             issues.append(
                 "LAVS_MOTION_PYTHON missing. Run scripts/windows/install-motion.ps1 "
-                "(or Linux equivalent) on the office PC."
+                "(or scripts/linux/install-motion.sh) on the office PC."
             )
         if not self.worker_script.exists():
             issues.append(f"Worker missing: {self.worker_script}")
-        if not self.weights_dir.exists() or not any(self.weights_dir.iterdir()):
-            issues.append(
-                f"Transfer weights missing under {self.weights_dir}. "
-                "Stage-2 install is user-triggered; pose extract ≠ motion transfer."
-            )
+        backend = self._detect_backend()
+        if not backend.get("ok"):
+            issues.append(str(backend.get("detail")))
         ok = not issues
         return {
             "ok": ok,
             "motion_python": str(py) if py else None,
             "worker_script": str(self.worker_script),
             "weights_dir": str(self.weights_dir),
+            "backend": backend.get("backend"),
             "issues": issues,
             "implementation_status": "available" if ok else "not_ready",
-            "message": "motion transfer ready" if ok else "; ".join(issues),
+            "message": (
+                f"motion transfer ready ({backend.get('backend')})"
+                if ok
+                else "; ".join(issues)
+            ),
         }
 
     def validate_input(self, payload: dict[str, Any]) -> dict[str, Any]:

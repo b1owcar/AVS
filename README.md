@@ -11,10 +11,12 @@
 | 2 | ComfyUI + SDXL（含 warm worker） | 代码完成；本机 GPU 验证在办公室 |
 | 3 | 视频预处理框架 | 完成（FFmpeg） |
 | 4 | Wan T2V + **I2V** | 代码完成；需 ComfyUI + 权重 |
-| 5 | 姿态提取 + 动作迁移框架 | 代码完成；transfer 权重用户自备 |
-| 6 | TRELLIS / video keyframe≈3D | 代码完成；TRELLIS 需本机 runner |
+| 5 | 姿态提取 + 动作迁移 | 代码完成；`run_transfer.py` / `backend.json` 可插拔后端 |
+| 6 | TRELLIS / video keyframe≈3D | 代码完成；`trellis_runner.py` 已提供（需本机装 TRELLIS） |
 | 7 | Linux 冒烟 | `scripts/linux/smoke.sh` |
 | — | SAST | 见 `docs/SAST_REPORT.md` |
+
+**办公室剩余**：装 Comfy/权重；为 motion 写 `run_transfer.py`；Linux 装 microsoft/TRELLIS；不做假进度。
 
 Cloud / 远程环境**不能**写入 `D:\avs`；用更新脚本同步到办公室 PC。
 
